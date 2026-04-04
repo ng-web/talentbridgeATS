@@ -1,0 +1,221 @@
+/* @import "tom-select/dist/css/tom-select.css"; */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --ll-purple: #6f4cb2;
+    --ll-purple-dark: #43325f;
+    --ll-lavender: #b3a0d6;
+    --ll-lilac: #bca7dd;
+    --ll-teal: #50b7a4;
+    --ll-slate: #6d8290;
+    --ll-surface: #f4f4f6;
+}
+
+body {
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    background: var(--ll-surface);
+    color: #1f2937;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+.ll-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.22s ease-out;
+    min-width: 120px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.ll-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.ll-btn-primary {
+    background: var(--ll-purple);
+    color: #ffffff;
+    border: 1px solid var(--ll-purple);
+}
+
+.ll-btn-primary:hover {
+    background: #8161bf;
+    border-color: #8161bf;
+}
+
+.ll-btn-accent {
+    background: var(--ll-teal);
+    color: #ffffff;
+    border: 1px solid var(--ll-teal);
+}
+
+.ll-btn-accent:hover {
+    background: #63c3b1;
+    border-color: #63c3b1;
+}
+
+.ll-btn-secondary {
+    background: var(--ll-purple-dark);
+    color: #ffffff;
+    border: 1px solid var(--ll-purple-dark);
+}
+
+.ll-btn-secondary:hover {
+    background: #554276;
+    border-color: #554276;
+}
+
+.ll-btn-outline {
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+}
+
+.ll-btn-outline:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.ll-btn-soft {
+    background: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #f3f4f6;
+}
+
+.ll-btn-soft:hover {
+    background: #e5e7eb;
+    border-color: #e5e7eb;
+}
+
+.ll-sparkline {
+    display: flex;
+    align-items: end;
+    gap: 4px;
+    height: 34px;
+}
+
+.ll-sparkline span {
+    display: block;
+    width: 6px;
+    border-radius: 999px;
+    background: rgba(111, 76, 178, 0.18);
+}
+
+.ll-sparkline--teal span {
+    background: rgba(80, 183, 164, 0.22);
+}
+
+.ll-btn-slate {
+    background: var(--ll-slate);
+    color: #ffffff;
+    border: 1px solid var(--ll-slate);
+}
+
+.ll-btn-slate:hover {
+    background: #7c909d;
+    border-color: #7c909d;
+}
+
+.ll-btn-lavender {
+    background: var(--ll-lavender);
+    color: #ffffff;
+    border: 1px solid var(--ll-lavender);
+}
+
+.ll-btn-lavender:hover {
+    background: #c1b1df;
+    border-color: #c1b1df;
+}
+
+/* Tom Select overrides to match portal form fields */
+.ts-wrapper {
+    width: 100%;
+}
+
+.ts-wrapper.single .ts-control {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid rgb(209 213 219) !important; /* border-gray-300 */
+    border-radius: 1rem !important; /* rounded-2xl */
+    min-height: 46px;
+    padding: 0.75rem 2.75rem 0.75rem 1rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    background-color: #fff !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'><path stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 1rem 1rem;
+    font-size: 1rem;
+    line-height: 1.5rem;
+}
+
+.ts-wrapper.single.input-active .ts-control,
+.ts-wrapper.single .ts-control:focus,
+.ts-wrapper.focus .ts-control {
+    border-color: rgb(59 130 246) !important;
+    box-shadow: 0 0 0 1px rgb(59 130 246) !important;
+    outline: none !important;
+}
+
+.ts-wrapper.single .ts-control::after {
+    display: none !important;
+}
+
+.ts-wrapper .ts-control input {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 1rem !important;
+}
+
+.ts-wrapper .item {
+    line-height: 1.5rem;
+}
+
+.ts-dropdown {
+    border: 1px solid rgb(209 213 219) !important;
+    border-radius: 1rem !important;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+    margin-top: 0.25rem;
+    background: #fff;
+}
+
+.ts-dropdown .option {
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem;
+}
+
+.ts-dropdown .active {
+    background: rgb(243 244 246) !important;
+    color: inherit !important;
+}
+
+/* Native select fields styled to visually match Tom Select */
+.portal-form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'><path stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 1rem 1rem;
+    padding-right: 2.75rem !important;
+    min-height: 46px;
+}
+
+.portal-form-select:focus {
+    border-color: rgb(59 130 246) !important;
+    box-shadow: 0 0 0 1px rgb(59 130 246) !important;
+    outline: none !important;
+}

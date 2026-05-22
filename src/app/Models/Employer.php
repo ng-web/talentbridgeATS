@@ -16,6 +16,10 @@ final class Employer extends Model
         'website',
         'logo_path',
         'contact_person',
+        'contact_email',
+        'phone_company',
+        'phone_ext',
+        'phone_direct',
         'billing_status',
     ];
 

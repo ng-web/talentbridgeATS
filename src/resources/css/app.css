@@ -14,6 +14,8 @@
     --ll-surface: #f4f4f6;
 }
 
+[x-cloak] { display: none !important; }
+
 body {
     font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
     background: var(--ll-surface);
@@ -28,73 +30,86 @@ h1, h2, h3, h4, h5, h6 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 1rem;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    transition: all 0.22s ease-out;
-    min-width: 120px;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    gap: 0.375rem;
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.ll-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-}
-
-.ll-btn-primary {
+/* accent: brand purple — page-level primary CTAs only */
+.ll-btn-accent {
     background: var(--ll-purple);
     color: #ffffff;
     border: 1px solid var(--ll-purple);
 }
 
-.ll-btn-primary:hover {
-    background: #8161bf;
-    border-color: #8161bf;
-}
-
-.ll-btn-accent {
-    background: var(--ll-teal);
-    color: #ffffff;
-    border: 1px solid var(--ll-teal);
-}
-
 .ll-btn-accent:hover {
-    background: #63c3b1;
-    border-color: #63c3b1;
+    background: #7d5bbf;
+    border-color: #7d5bbf;
 }
 
-.ll-btn-secondary {
-    background: var(--ll-purple-dark);
-    color: #ffffff;
-    border: 1px solid var(--ll-purple-dark);
-}
-
-.ll-btn-secondary:hover {
-    background: #554276;
-    border-color: #554276;
-}
-
-.ll-btn-outline {
-    background: #ffffff;
-    color: #1f2937;
+/* primary, secondary, slate, lavender, outline, soft: neutral — visible on white */
+.ll-btn-primary,
+.ll-btn-secondary,
+.ll-btn-slate,
+.ll-btn-lavender,
+.ll-btn-outline,
+.ll-btn-soft {
+    background: #f9fafb;
+    color: #374151;
     border: 1px solid #d1d5db;
 }
 
-.ll-btn-outline:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-}
-
-.ll-btn-soft {
-    background: #f3f4f6;
-    color: #1f2937;
-    border: 1px solid #f3f4f6;
-}
-
+.ll-btn-primary:hover,
+.ll-btn-secondary:hover,
+.ll-btn-slate:hover,
+.ll-btn-lavender:hover,
+.ll-btn-outline:hover,
 .ll-btn-soft:hover {
-    background: #e5e7eb;
-    border-color: #e5e7eb;
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
+/* semantic soft variants for dashboard quick actions */
+.ll-btn-warning {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+.ll-btn-warning:hover {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+.ll-btn-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.ll-btn-success:hover {
+    background: #d1fae5;
+    border-color: #34d399;
+    color: #064e3b;
+}
+
+.ll-btn-info {
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #7dd3fc;
+}
+
+.ll-btn-info:hover {
+    background: #e0f2fe;
+    border-color: #38bdf8;
+    color: #075985;
 }
 
 .ll-sparkline {

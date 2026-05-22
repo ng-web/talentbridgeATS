@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
+use App\Models\Application;
 use App\Models\Job;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 final class JobController extends Controller
 {
@@ -100,6 +102,17 @@ final class JobController extends Controller
 
         $job->loadMissing(['employer.user']);
 
-        return view('jobseeker.jobs.show', compact('job'));
+        $jobSeeker = Auth::user()?->jobSeeker;
+
+        $existingApplication = $jobSeeker
+            ? Application::query()
+                ->where('job_id', $job->id)
+                ->where('job_seeker_id', $jobSeeker->id)
+                ->first()
+            : null;
+
+        $deadlinePassed = $job->application_deadline && now()->startOfDay()->isAfter($job->application_deadline);
+
+        return view('jobseeker.jobs.show', compact('job', 'existingApplication', 'deadlinePassed'));
     }
 }

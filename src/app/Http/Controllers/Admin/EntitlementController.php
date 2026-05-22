@@ -137,6 +137,8 @@ final class EntitlementController extends Controller
     {
         $entitlement->delete();
 
-        return back()->with('success', 'Entitlement removed successfully.');
+        return redirect()
+            ->route('admin.entitlements.index')
+            ->with('success', 'Entitlement removed successfully.');
     }
 }

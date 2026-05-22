@@ -4,18 +4,18 @@
 
 @php
     $classes = match($tone) {
-        'brand' => 'bg-violet-100 text-violet-700 border border-violet-200',
-        'success' => 'bg-green-100 text-green-700 border border-green-200',
-        'warning' => 'bg-amber-100 text-amber-700 border border-amber-200',
-        'danger' => 'bg-red-100 text-red-700 border border-red-200',
-        'neutral' => 'bg-gray-100 text-gray-600 border border-gray-200',
-        'info' => 'bg-sky-100 text-sky-700 border border-sky-200',
-        default => 'bg-gray-100 text-gray-600 border border-gray-200',
+        'brand'   => 'bg-violet-50 text-violet-600',
+        'success' => 'bg-emerald-50 text-emerald-700',
+        'warning' => 'bg-amber-50 text-amber-600',
+        'danger'  => 'bg-red-50 text-red-600',
+        'neutral' => 'bg-gray-100 text-gray-500',
+        'info'    => 'bg-sky-50 text-sky-600',
+        default   => 'bg-gray-100 text-gray-500',
     };
 @endphp
 
 <span {{ $attributes->merge([
-    'class' => "inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-medium leading-none whitespace-nowrap {$classes}"
+    'class' => "inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap {$classes}"
 ]) }}>
     {{ $slot }}
 </span>

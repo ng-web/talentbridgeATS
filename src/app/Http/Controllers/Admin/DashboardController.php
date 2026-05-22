@@ -27,6 +27,10 @@ final class DashboardController extends Controller
 
         $userCount = User::query()->count();
 
+        $jobSeekerCount = User::query()->role('job_seeker')->count();
+
+        $employerCount = User::query()->role('employer')->count();
+
         $reviewRequiredPaymentsCount = Payment::query()
             ->where('status', Payment::STATUS_REVIEW_REQUIRED)
             ->count();
@@ -55,16 +59,28 @@ final class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $expiringEntitlements = Entitlement::query()
+            ->with('user')
+            ->where('status', Entitlement::STATUS_ACTIVE)
+            ->whereNotNull('expires_at')
+            ->whereBetween('expires_at', [now(), now()->addDays(7)])
+            ->orderBy('expires_at')
+            ->take(5)
+            ->get();
+
         return view('admin.dashboard', [
             'pendingJobsCount' => $pendingJobsCount,
             'publishedJobsCount' => $publishedJobsCount,
             'applicationCount' => $applicationCount,
             'userCount' => $userCount,
+            'jobSeekerCount' => $jobSeekerCount,
+            'employerCount' => $employerCount,
             'reviewRequiredPaymentsCount' => $reviewRequiredPaymentsCount,
             'activeEntitlementsCount' => $activeEntitlementsCount,
             'expiringEntitlementsCount' => $expiringEntitlementsCount,
             'recentPendingJobs' => $recentPendingJobs,
             'recentReviewPayments' => $recentReviewPayments,
+            'expiringEntitlements' => $expiringEntitlements,
         ]);
     }
 }

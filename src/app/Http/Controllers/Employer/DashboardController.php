@@ -23,16 +23,41 @@ final class DashboardController extends Controller
             ->where('employer_id', $employer->id)
             ->count();
 
+        $jobStatusCounts = Job::query()
+            ->where('employer_id', $employer->id)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
         $applicantCount = Application::query()
-            ->whereHas('job', fn ($query) => $query->where('employer_id', $employer->id))
+            ->whereHas('job', fn ($q) => $q->where('employer_id', $employer->id))
+            ->whereNotIn('status', [Application::STATUS_WITHDRAWN])
             ->count();
+
+        $applicantStatusCounts = Application::query()
+            ->whereHas('job', fn ($q) => $q->where('employer_id', $employer->id))
+            ->whereNotIn('status', [Application::STATUS_WITHDRAWN])
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $recentApplicants = Application::query()
+            ->with(['jobSeeker.user', 'jobSeeker.documents', 'job'])
+            ->whereHas('job', fn ($q) => $q->where('employer_id', $employer->id))
+            ->whereNotIn('status', [Application::STATUS_WITHDRAWN])
+            ->latest()
+            ->take(5)
+            ->get();
 
         $companyCompletion = $this->calculateCompanyCompletion($employer);
 
         return view('employer.dashboard', compact(
             'employer',
             'jobCount',
+            'jobStatusCounts',
             'applicantCount',
+            'applicantStatusCounts',
+            'recentApplicants',
             'companyCompletion',
         ));
     }
@@ -44,7 +69,8 @@ final class DashboardController extends Controller
             $employer->industry,
             $employer->logo_path,
             $employer->website ?? null,
-            $employer->description ?? null,
+            $employer->company_description ?? null,
+            $employer->contact_person ?? null,
             $employer->contact_email ?? null,
         ];
 

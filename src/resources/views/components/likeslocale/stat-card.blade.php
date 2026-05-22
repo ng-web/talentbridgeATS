@@ -31,6 +31,8 @@
                     {{ $description }}
                 </p>
             @endif
+
+            {{ $slot }}
         </div>
 
         <div class="shrink-0 flex flex-col items-end gap-3">

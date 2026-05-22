@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\JobApprovedMail;
 use App\Models\Job;
+use App\Notifications\JobApprovedNotification;
+use App\Notifications\JobReturnedToPendingNotification;
+use App\Notifications\JobArchivedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 final class JobController extends Controller
@@ -61,6 +66,16 @@ final class JobController extends Controller
             'is_approved' => true,
         ]);
 
+        $employerUser = $job->employer?->user;
+
+        if ($employerUser) {
+            $employerUser->notify(new JobApprovedNotification($job));
+
+            if ($employerUser->email) {
+                Mail::to($employerUser->email)->send(new JobApprovedMail($job));
+            }
+        }
+
         return back()->with('success', 'Job approved successfully.');
     }
 
@@ -71,6 +86,12 @@ final class JobController extends Controller
             'is_approved' => false,
         ]);
 
+        $employerUser = $job->employer?->user;
+
+        if ($employerUser) {
+            $employerUser->notify(new JobReturnedToPendingNotification($job));
+        }
+
         return back()->with('success', 'Job moved to pending review.');
     }
 
@@ -79,6 +100,12 @@ final class JobController extends Controller
         $job->update([
             'status' => Job::STATUS_ARCHIVED,
         ]);
+
+        $employerUser = $job->employer?->user;
+
+        if ($employerUser) {
+            $employerUser->notify(new JobArchivedNotification($job));
+        }
 
         return back()->with('success', 'Job archived successfully.');
     }

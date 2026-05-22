@@ -31,6 +31,10 @@ final class CompanyController extends Controller
             'industry' => ['nullable', 'string', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
+            'contact_email' => ['nullable', 'email', 'max:255'],
+            'phone_company' => ['nullable', 'string', 'max:30'],
+            'phone_ext'     => ['nullable', 'string', 'max:10'],
+            'phone_direct'  => ['nullable', 'string', 'max:30'],
         ]);
 
         $employer->update($validated);

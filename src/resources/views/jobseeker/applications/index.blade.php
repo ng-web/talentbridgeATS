@@ -13,19 +13,64 @@
             </div>
         </div>
 
+        <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Filter Applications</h3>
+                    <p class="mt-0.5 text-sm text-gray-500">Search by job title or narrow by status.</p>
+                </div>
+            </div>
+
+            <form method="GET" action="{{ route('jobseeker.applications.index') }}" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <input
+                    id="q"
+                    name="q"
+                    type="text"
+                    value="{{ $filters['q'] ?? '' }}"
+                    placeholder="Search by job title"
+                    class="flex-1 min-w-0 w-full sm:w-auto rounded-2xl border-gray-300 shadow-sm"
+                >
+
+                <select id="status" name="status" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                    <option value="">All statuses</option>
+                    @foreach(\App\Models\Application::STATUSES as $status)
+                        <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>
+                            {{ \App\Models\Application::labelFor($status) }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <div class="flex gap-2 shrink-0 w-full sm:w-auto">
+                    <x-likeslocale.button type="submit" variant="accent">
+                        Apply
+                    </x-likeslocale.button>
+                    <a href="{{ route('jobseeker.applications.index') }}">
+                        <x-likeslocale.button type="button" variant="secondary">
+                            Reset
+                        </x-likeslocale.button>
+                    </a>
+                </div>
+            </form>
+        </div>
+
         @if($applications->isEmpty())
             <div class="rounded-3xl bg-white p-8 shadow border border-gray-100 text-center">
-                <h3 class="text-xl font-semibold text-gray-900">No applications yet</h3>
-                <p class="mt-2 text-gray-500">Once you apply to opportunities, they will appear here.</p>
+                <h3 class="text-xl font-semibold text-gray-900">No applications found</h3>
+                <p class="mt-2 text-gray-500">
+                    @if(($filters['q'] ?? '') !== '' || ($filters['status'] ?? '') !== '')
+                        No applications matched your current filters.
+                    @else
+                        Once you apply to opportunities, they will appear here.
+                    @endif
+                </p>
 
                 <x-likeslocale.button :href="route('jobseeker.jobs.index')" class="mt-6">
                     Browse Opportunities
                 </x-likeslocale.button>
             </div>
         @else
-            <div class="rounded-3xl border border-gray-300 p-4 md:p-6" style="background:#e7e7ea;">
-                <div class="space-y-4">
-                    @foreach($applications as $application)
+            <div class="space-y-3">
+                @foreach($applications as $application)
                         @php
                             $job = $application->job;
                             $companyName = $job?->employer?->company_name ?: ($job?->employer?->user?->name ?: 'Company');
@@ -33,9 +78,8 @@
                             $statusLabel = \App\Models\Application::labelFor($application->status);
                         @endphp
 
-                        <div class="rounded-2xl border border-gray-300 px-4 py-4 md:px-5 md:py-4 shadow-sm" style="background:#efeff2;">
-                            <div class="rounded-2xl border border-transparent px-4 py-4 md:px-5 md:py-4 transition-all duration-200 ease-out hover:bg-[#f6f6f9] hover:border-gray-300 hover:shadow-md">
-                                <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                        <x-likeslocale.operation-row>
+                            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
                                     @if($job)
                                         <a href="{{ route('jobseeker.jobs.show', $job) }}" class="min-w-0 flex-1">
                                             <div class="flex flex-wrap items-center gap-2">
@@ -48,29 +92,31 @@
                                                 </x-likeslocale.status-pill>
                                             </div>
 
-                                            <div class="mt-1 text-sm">
-                                                <span class="font-semibold text-gray-800">{{ $companyName }}</span>
-                                                @if($job?->category)
-                                                    <span class="text-gray-400">·</span>
-                                                    <span class="text-gray-600">{{ $job->category }}</span>
-                                                @endif
-                                            </div>
+                                            <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5">
+                                                <div class="text-sm">
+                                                    <span class="font-semibold text-gray-800">{{ $companyName }}</span>
+                                                    @if($job?->category)
+                                                        <span class="text-gray-400">·</span>
+                                                        <span class="text-gray-600">{{ $job->category }}</span>
+                                                    @endif
+                                                </div>
 
-                                            <div class="mt-2 text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
-                                                <span>
-                                                    <span class="font-medium text-gray-700">Applied:</span>
-                                                    {{ $application->applied_at?->format('M d, Y') }}
-                                                </span>
+                                                <div class="text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+                                                    <span>
+                                                        <span class="font-medium text-gray-700">Applied:</span>
+                                                        {{ $application->applied_at?->format('M d, Y') }}
+                                                    </span>
 
-                                                <span>
-                                                    <span class="font-medium text-gray-700">Resume:</span>
-                                                    {{ $application->submitted_resume_path ? 'Submitted' : 'Not submitted' }}
-                                                </span>
+                                                    <span>
+                                                        <span class="font-medium text-gray-700">Resume:</span>
+                                                        {{ $application->submitted_resume_path ? 'Submitted' : 'Not submitted' }}
+                                                    </span>
 
-                                                <span>
-                                                    <span class="font-medium text-gray-700">Cover Letter:</span>
-                                                    {{ $application->submitted_cover_letter_path ? 'Submitted' : 'Not submitted' }}
-                                                </span>
+                                                    <span>
+                                                        <span class="font-medium text-gray-700">Cover Letter:</span>
+                                                        {{ $application->submitted_cover_letter_path ? 'Submitted' : 'Not submitted' }}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </a>
                                     @else
@@ -99,19 +145,34 @@
                                             @endif
                                         </div>
 
-                                        @if($job)
-                                            <div class="flex flex-row gap-3">
-                                                <x-likeslocale.button :href="route('jobseeker.jobs.show', $job)" class="min-w-[96px]">
-                                                    View
+                                        <div class="flex flex-row gap-3">
+                                            @if($job)
+                                                <x-likeslocale.button :href="route('jobseeker.jobs.show', $job)" variant="info">
+                                                    View Role
                                                 </x-likeslocale.button>
-                                            </div>
-                                        @endif
+                                            @endif
+
+                                            @if(in_array($application->status, [\App\Models\Application::STATUS_APPLIED, \App\Models\Application::STATUS_REVIEWING], true))
+                                                <form method="POST"
+                                                      action="{{ route('jobseeker.applications.withdraw', $application) }}"
+                                                      onsubmit="return confirm('Withdraw your application for {{ addslashes($job?->title ?? 'this role') }}? This cannot be undone.');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <x-likeslocale.button type="submit" variant="secondary">
+                                                        Withdraw
+                                                    </x-likeslocale.button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    @endforeach
-                </div>
+                        </x-likeslocale.operation-row>
+                @endforeach
+            </div>
+
+            <div class="mt-6">
+                {{ $applications->links() }}
             </div>
         @endif
     </div>

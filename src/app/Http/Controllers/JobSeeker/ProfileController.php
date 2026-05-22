@@ -16,6 +16,8 @@ final class ProfileController extends Controller
 
         abort_unless($jobSeeker, 404);
 
+        $jobSeeker->load('documents');
+
         return view('jobseeker.profile.edit', compact('jobSeeker'));
     }
 
@@ -28,6 +30,7 @@ final class ProfileController extends Controller
         $validated = $request->validate([
             'date_of_birth' => ['nullable', 'date'],
             'location' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'education' => ['nullable', 'string'],
             'experience_summary' => ['nullable', 'string'],
             'skills' => ['nullable', 'string'],
@@ -37,6 +40,7 @@ final class ProfileController extends Controller
         $jobSeeker->update([
             'date_of_birth' => $validated['date_of_birth'] ?? null,
             'location' => $validated['location'] ?? null,
+            'phone' => $validated['phone'] ?? null,
             'education' => $validated['education'] ?? null,
             'experience_summary' => $validated['experience_summary'] ?? null,
             'skills' => $validated['skills'] ?? null,
@@ -44,11 +48,11 @@ final class ProfileController extends Controller
             'profile_completeness' => $this->calculateProfileCompleteness([
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'location' => $validated['location'] ?? null,
+                'phone' => $validated['phone'] ?? null,
                 'education' => $validated['education'] ?? null,
                 'experience_summary' => $validated['experience_summary'] ?? null,
                 'skills' => $validated['skills'] ?? null,
                 'resume_path' => $jobSeeker->resume_path,
-                'cover_letter_path' => $jobSeeker->cover_letter_path,
             ]),
         ]);
 
@@ -62,11 +66,11 @@ final class ProfileController extends Controller
         $fields = [
             'date_of_birth',
             'location',
+            'phone',
             'education',
             'experience_summary',
             'skills',
             'resume_path',
-            'cover_letter_path',
         ];
 
         $completed = 0;

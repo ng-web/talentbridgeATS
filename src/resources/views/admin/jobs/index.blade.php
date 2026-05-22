@@ -4,38 +4,29 @@
             <h3 class="text-xl font-semibold text-gray-900">Search & Filter Jobs</h3>
             <p class="mt-1 text-sm text-gray-500">Find jobs quickly by title, company, location, or status.</p>
 
-            <form id="job-filters-form" method="GET" action="{{ route('admin.jobs.index') }}" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="md:col-span-2">
-                    <label for="q" class="block text-sm font-medium text-gray-700">Search jobs</label>
-                    <input
-                        id="q"
-                        name="q"
-                        type="text"
-                        value="{{ $filters['q'] ?? '' }}"
-                        placeholder="Search by title, company, or location"
-                        class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm"
-                    >
-                    <p class="mt-2 text-xs text-gray-500">Filters update automatically as you type.</p>
-                </div>
+            <form id="job-filters-form" method="GET" action="{{ route('admin.jobs.index') }}" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <input
+                    id="q"
+                    name="q"
+                    type="text"
+                    value="{{ $filters['q'] ?? '' }}"
+                    placeholder="Search by title, company, or location"
+                    class="flex-1 min-w-0 w-full sm:w-auto rounded-2xl border-gray-300 shadow-sm"
+                >
 
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                    <select id="status" name="status" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                        <option value="">All statuses</option>
-                        <option value="{{ \App\Models\Job::STATUS_DRAFT }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_DRAFT)>Draft</option>
-                        <option value="{{ \App\Models\Job::STATUS_PENDING_REVIEW }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_PENDING_REVIEW)>Pending Review</option>
-                        <option value="{{ \App\Models\Job::STATUS_PUBLISHED }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_PUBLISHED)>Published</option>
-                        <option value="{{ \App\Models\Job::STATUS_ARCHIVED }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_ARCHIVED)>Archived</option>
-                    </select>
-                </div>
+                <select id="status" name="status" class="w-full sm:w-44 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                    <option value="">All statuses</option>
+                    <option value="{{ \App\Models\Job::STATUS_DRAFT }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_DRAFT)>Draft</option>
+                    <option value="{{ \App\Models\Job::STATUS_PENDING_REVIEW }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_PENDING_REVIEW)>Pending Review</option>
+                    <option value="{{ \App\Models\Job::STATUS_PUBLISHED }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_PUBLISHED)>Published</option>
+                    <option value="{{ \App\Models\Job::STATUS_ARCHIVED }}" @selected(($filters['status'] ?? '') === \App\Models\Job::STATUS_ARCHIVED)>Archived</option>
+                </select>
 
-                <div class="md:col-span-3 flex justify-end">
-                    <a href="{{ route('admin.jobs.index') }}">
-                        <x-likeslocale.button type="button" variant="secondary">
-                            Reset
-                        </x-likeslocale.button>
-                    </a>
-                </div>
+                <a href="{{ route('admin.jobs.index') }}" class="shrink-0">
+                    <x-likeslocale.button type="button" variant="secondary">
+                        Reset
+                    </x-likeslocale.button>
+                </a>
             </form>
         </div>
 

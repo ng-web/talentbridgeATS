@@ -21,12 +21,23 @@ final class LogoController extends Controller
 
         $path = $request->file('logo')->store('employers/logos', 'public');
 
-        $employer->update([
-            'logo_path' => $path,
-        ]);
+        $employer->update(['logo_path' => $path]);
 
         return redirect()
             ->route('employer.company.edit')
             ->with('status', 'Company logo uploaded successfully.');
+    }
+
+    public function remove(): RedirectResponse
+    {
+        $employer = Auth::user()->employer;
+
+        abort_unless($employer, 404);
+
+        $employer->update(['logo_path' => null]);
+
+        return redirect()
+            ->route('employer.company.edit')
+            ->with('status', 'Company logo removed.');
     }
 }

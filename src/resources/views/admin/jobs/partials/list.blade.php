@@ -4,18 +4,16 @@
         <p class="mt-2 text-gray-500">Employer-submitted jobs will appear here for moderation.</p>
     </div>
 @else
-    <div class="rounded-3xl border border-gray-300 p-4 md:p-6" style="background:#e7e7ea;">
-        <div class="space-y-4">
-            @foreach($jobs as $job)
+    <div class="space-y-3">
+        @foreach($jobs as $job)
                 @php
                     $companyName = $job->employer?->company_name ?: ($job->employer?->user?->name ?: 'Company');
                     $logoPath = $job->employer?->logo_path;
                     $initial = strtoupper(mb_substr($companyName, 0, 1));
                 @endphp
 
-                <div class="rounded-2xl border border-gray-300 px-4 py-4 md:px-5 md:py-4 shadow-sm" style="background:#efeff2;">
-                    <div class="rounded-2xl border border-transparent px-4 py-4 md:px-5 md:py-4 transition-all duration-200 ease-out hover:bg-[#f6f6f9] hover:border-gray-300 hover:shadow-md">
-                        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                <x-likeslocale.operation-row>
+                    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
                             <div class="flex items-start gap-4 min-w-0 flex-1">
                                 <div class="shrink-0">
                                     @if($logoPath)
@@ -48,17 +46,19 @@
                                         </x-likeslocale.status-pill>
                                     </div>
 
-                                    <div class="mt-1 text-sm">
-                                        <span class="font-semibold text-gray-800">{{ $companyName }}</span>
-                                        @if($job->category)
-                                            <span class="text-gray-400">·</span>
-                                            <span class="text-gray-600">{{ $job->category }}</span>
-                                        @endif
-                                    </div>
+                                    <div class="border-t border-gray-100 mt-3 pt-2.5">
+                                        <div class="text-sm">
+                                            <span class="font-semibold text-gray-800">{{ $companyName }}</span>
+                                            @if($job->category)
+                                                <span class="text-gray-400">·</span>
+                                                <span class="text-gray-600">{{ $job->category }}</span>
+                                            @endif
+                                        </div>
 
-                                    <p class="mt-2 text-sm text-gray-500">
-                                        {{ \Illuminate\Support\Str::limit($job->description, 110) }}
-                                    </p>
+                                        <p class="mt-1.5 text-sm text-gray-500">
+                                            {{ \Illuminate\Support\Str::limit($job->description, 110) }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -76,7 +76,7 @@
                                             onsubmit="return confirm('Approve and publish this job?');">
                                             @csrf
                                             @method('PATCH')
-                                            <x-likeslocale.button type="submit" class="min-w-[96px]">
+                                            <x-likeslocale.button type="submit" variant="success">
                                                 Approve
                                             </x-likeslocale.button>
                                         </form>
@@ -87,7 +87,7 @@
                                             onsubmit="return confirm('Move this job back to pending review?');">
                                             @csrf
                                             @method('PATCH')
-                                            <x-likeslocale.button type="submit" variant="outline" class="min-w-[120px]">
+                                            <x-likeslocale.button type="submit" variant="warning">
                                                 Set Pending
                                             </x-likeslocale.button>
                                         </form>
@@ -98,21 +98,19 @@
                                             onsubmit="return confirm('Archive this job? It will no longer be active.');">
                                             @csrf
                                             @method('PATCH')
-                                            <x-likeslocale.button type="submit" variant="secondary" class="min-w-[96px]">
+                                            <x-likeslocale.button type="submit">
                                                 Archive
                                             </x-likeslocale.button>
                                         </form>
                                     @endif
                                 </div>
                             </div>
-                        </div>
                     </div>
-                </div>
+                </x-likeslocale.operation-row>
             @endforeach
-        </div>
+    </div>
 
-        <div class="mt-6">
-            {{ $jobs->links() }}
-        </div>
+    <div class="mt-6">
+        {{ $jobs->links() }}
     </div>
 @endif

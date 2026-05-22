@@ -144,50 +144,38 @@
                     </div>
                 @endif
 
-                <form id="payment-filters-form" method="GET" action="{{ route('admin.payments.index') }}" class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="md:col-span-2">
-                        <label for="q" class="block text-sm font-medium text-gray-700">Search payments</label>
-                        <input
-                            id="q"
-                            name="q"
-                            type="text"
-                            value="{{ $filters['q'] ?? '' }}"
-                            placeholder="Search by order ID, external ref, user name, or email"
-                            class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm"
-                        >
-                        <p class="mt-2 text-xs text-gray-500">Filters update automatically as you type.</p>
-                    </div>
+                <form id="payment-filters-form" method="GET" action="{{ route('admin.payments.index') }}" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <input
+                        id="q"
+                        name="q"
+                        type="text"
+                        value="{{ $filters['q'] ?? '' }}"
+                        placeholder="Search by order ID, name, or email"
+                        class="flex-1 min-w-0 w-full sm:w-auto rounded-2xl border-gray-300 shadow-sm"
+                    >
 
-                    <div>
-                        <label for="status_filter" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select id="status_filter" name="status" class="portal-form-select mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                            <option value="">All statuses</option>
-                            @foreach(\App\Models\Payment::STATUSES as $paymentStatus)
-                                <option value="{{ $paymentStatus }}" @selected(($filters['status'] ?? '') === $paymentStatus)>
-                                    {{ \App\Models\Payment::labelFor($paymentStatus) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <select id="status_filter" name="status" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                        <option value="">All statuses</option>
+                        @foreach(\App\Models\Payment::STATUSES as $paymentStatus)
+                            <option value="{{ $paymentStatus }}" @selected(($filters['status'] ?? '') === $paymentStatus)>
+                                {{ \App\Models\Payment::labelFor($paymentStatus) }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                    <div>
-                        <label for="gateway_filter" class="block text-sm font-medium text-gray-700">Gateway</label>
-                        <select id="gateway_filter" name="gateway" class="portal-form-select mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                            <option value="">All gateways</option>
-                            <option value="manual" @selected(($filters['gateway'] ?? '') === 'manual')>Manual</option>
-                            <option value="wipay" @selected(($filters['gateway'] ?? '') === 'wipay')>WiPay</option>
-                            <option value="stripe" @selected(($filters['gateway'] ?? '') === 'stripe')>Stripe</option>
-                            <option value="paypal" @selected(($filters['gateway'] ?? '') === 'paypal')>PayPal</option>
-                        </select>
-                    </div>
+                    <select id="gateway_filter" name="gateway" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                        <option value="">All gateways</option>
+                        <option value="manual" @selected(($filters['gateway'] ?? '') === 'manual')>Manual</option>
+                        <option value="wipay" @selected(($filters['gateway'] ?? '') === 'wipay')>WiPay</option>
+                        <option value="stripe" @selected(($filters['gateway'] ?? '') === 'stripe')>Stripe</option>
+                        <option value="paypal" @selected(($filters['gateway'] ?? '') === 'paypal')>PayPal</option>
+                    </select>
 
-                    <div class="md:col-span-4 flex justify-end">
-                        <a href="{{ route('admin.payments.index') }}">
-                            <x-likeslocale.button type="button" variant="secondary">
-                                Reset
-                            </x-likeslocale.button>
-                        </a>
-                    </div>
+                    <a href="{{ route('admin.payments.index') }}" class="shrink-0">
+                        <x-likeslocale.button type="button" variant="secondary">
+                            Reset
+                        </x-likeslocale.button>
+                    </a>
                 </form>
 
                 <div id="payments-list-region">

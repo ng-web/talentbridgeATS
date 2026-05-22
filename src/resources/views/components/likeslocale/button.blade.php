@@ -6,13 +6,16 @@
 
 @php
     $variantClasses = [
-        'primary' => 'll-btn ll-btn-primary',
-        'accent' => 'll-btn ll-btn-accent',
-        'secondary' => 'll-btn ll-btn-secondary',
-        'slate' => 'll-btn ll-btn-slate',
+        'primary'  => 'll-btn ll-btn-primary',
+        'accent'   => 'll-btn ll-btn-accent',
+        'secondary'=> 'll-btn ll-btn-secondary',
+        'slate'    => 'll-btn ll-btn-slate',
         'lavender' => 'll-btn ll-btn-lavender',
-        'outline' => 'll-btn ll-btn-outline',
-        'soft' => 'll-btn ll-btn-soft',
+        'outline'  => 'll-btn ll-btn-outline',
+        'soft'     => 'll-btn ll-btn-soft',
+        'warning'  => 'll-btn ll-btn-warning',
+        'success'  => 'll-btn ll-btn-success',
+        'info'     => 'll-btn ll-btn-info',
     ];
 
     $classes = $variantClasses[$variant] ?? $variantClasses['primary'];

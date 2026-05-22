@@ -20,11 +20,31 @@ final class DashboardController extends Controller
             ->where('job_seeker_id', $jobSeeker->id)
             ->count();
 
+        $applicationStatusCounts = Application::query()
+            ->where('job_seeker_id', $jobSeeker->id)
+            ->whereNotIn('status', [Application::STATUS_WITHDRAWN])
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $recentApplications = Application::query()
+            ->with(['job.employer.user'])
+            ->where('job_seeker_id', $jobSeeker->id)
+            ->latest()
+            ->take(5)
+            ->get();
+
         $availableJobsCount = Job::query()
             ->where('is_approved', true)
-            ->where('status', 'published')
+            ->where('status', Job::STATUS_PUBLISHED)
             ->count();
 
-        return view('jobseeker.dashboard', compact('applicationCount', 'availableJobsCount', 'jobSeeker'));
+        return view('jobseeker.dashboard', compact(
+            'applicationCount',
+            'applicationStatusCounts',
+            'recentApplications',
+            'availableJobsCount',
+            'jobSeeker',
+        ));
     }
 }

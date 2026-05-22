@@ -1,39 +1,146 @@
-<x-layouts.portal :title="'My Profile'" heading="My Profile" subheading="Complete your profile and upload your documents." portalRole="jobseeker">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="rounded-3xl bg-white p-8 shadow border border-gray-100">
-            <p class="text-sm text-gray-500">Profile Completion</p>
-            <p class="text-4xl font-bold mt-3">{{ $jobSeeker->profile_completeness }}%</p>
+<x-layouts.portal :title="'My Profile'" heading="My Profile" subheading="Complete your profile, upload your default resume, and submit your compliance documents." portalRole="jobseeker">
+    @php
+        $profilePhoto = $jobSeeker->documents->firstWhere('document_type', \App\Models\JobSeekerDocument::TYPE_PROFILE_PHOTO);
+    @endphp
 
-            <div class="mt-4 w-full bg-gray-200 rounded-full h-3">
-                <div class="bg-violet-600 h-3 rounded-full" style="width: {{ $jobSeeker->profile_completeness }}%"></div>
+    @if(session('success'))
+        <div class="mb-6 rounded-3xl border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-6 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="space-y-6">
+            {{-- Profile photo --}}
+            <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
+                <div class="flex flex-col items-center text-center">
+                    @if($profilePhoto)
+                        <img src="{{ asset('storage/' . $profilePhoto->file_path) }}"
+                             alt="Profile photo"
+                             class="w-24 h-24 rounded-2xl object-cover border border-gray-200 shadow-sm">
+                    @else
+                        <div class="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-sm"
+                             style="background:#6f4cb2;">
+                            {{ strtoupper(mb_substr(Auth::user()->name, 0, 1)) }}
+                        </div>
+                    @endif
+
+                    <p class="mt-3 text-base font-semibold text-gray-900">{{ Auth::user()->name }}</p>
+                    <p class="text-sm text-gray-500">{{ Auth::user()->email }}</p>
+                </div>
+
+                <div class="mt-5 space-y-2">
+                    {{-- Single-action photo upload --}}
+                    <form x-data="{ loading: false }"
+                          method="POST"
+                          action="{{ route('jobseeker.documents.store') }}"
+                          enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" name="document_type" value="{{ \App\Models\JobSeekerDocument::TYPE_PROFILE_PHOTO }}">
+                        <label class="block cursor-pointer" :class="loading ? 'opacity-50 pointer-events-none' : ''">
+                            <input type="file"
+                                   name="file"
+                                   accept=".jpg,.jpeg,.png"
+                                   class="sr-only"
+                                   @change="loading = true; $el.closest('form').submit()">
+                            <div class="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 hover:border-[#6f4cb2]/40 hover:bg-violet-50/30 transition-all p-3 text-sm text-gray-500">
+                                <x-heroicon-o-arrow-up-tray class="w-4 h-4 shrink-0" />
+                                <span x-show="!loading">{{ $profilePhoto ? 'Replace photo' : 'Upload photo' }}</span>
+                                <span x-show="loading" x-cloak>Uploading…</span>
+                            </div>
+                        </label>
+                        @error('file')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </form>
+
+                    @if($profilePhoto)
+                        <form method="POST"
+                              action="{{ route('jobseeker.documents.destroy', $profilePhoto) }}"
+                              onsubmit="return confirm('Remove your profile photo?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    class="w-full text-xs font-medium text-red-500 hover:text-red-700 hover:underline text-center py-1">
+                                Remove photo
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
 
-            <div class="mt-6 space-y-3 text-sm">
-                <p>
-                    Resume:
-                    @if($jobSeeker->resume_path)
-                        <a href="{{ asset('storage/'.$jobSeeker->resume_path) }}" class="text-violet-600" target="_blank">View</a>
-                    @else
-                        <span class="text-gray-500">Not uploaded</span>
-                    @endif
-                </p>
+            {{-- Profile completeness + resume --}}
+            <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
+                <p class="text-sm text-gray-500">Profile Completion</p>
+                <p class="text-4xl font-bold mt-3">{{ $jobSeeker->profile_completeness }}%</p>
 
-                <p>
-                    Cover Letter:
-                    @if($jobSeeker->cover_letter_path)
-                        <a href="{{ asset('storage/'.$jobSeeker->cover_letter_path) }}" class="text-violet-600" target="_blank">View</a>
+                <div class="mt-4 w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-violet-600 h-3 rounded-full" style="width: {{ $jobSeeker->profile_completeness }}%"></div>
+                </div>
+
+                <div class="mt-6 space-y-2 text-sm">
+                    <p class="font-medium text-gray-700">Default Resume</p>
+                    @if($jobSeeker->resume_path)
+                        <div class="flex items-center gap-3">
+                            <a href="{{ asset('storage/'.$jobSeeker->resume_path) }}"
+                               class="text-violet-600 hover:underline"
+                               target="_blank">View resume</a>
+                            <span class="text-gray-300">·</span>
+                            <form method="POST"
+                                  action="{{ route('jobseeker.profile.resume.clear') }}"
+                                  onsubmit="return confirm('Remove your default resume?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="text-xs text-red-500 hover:text-red-700 hover:underline font-medium">
+                                    Remove
+                                </button>
+                            </form>
+                        </div>
                     @else
-                        <span class="text-gray-500">Not uploaded</span>
+                        <p class="text-gray-500">Not uploaded</p>
                     @endif
-                </p>
+                </div>
+
+                <div class="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    Your profile resume is used as the default for applications. A cover letter is required per role.
+                </div>
             </div>
         </div>
 
         <div class="lg:col-span-2 space-y-6">
+            {{-- Profile details form --}}
             <div class="rounded-3xl bg-white p-8 shadow border border-gray-100">
                 <form method="POST" action="{{ route('jobseeker.profile.update') }}" class="space-y-6">
                     @csrf
                     @method('PATCH')
+
+                    {{-- Contact info --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <input type="email" value="{{ Auth::user()->email }}" disabled
+                                   class="mt-1 block w-full rounded-md border-gray-200 bg-gray-50 text-gray-500 shadow-sm cursor-not-allowed">
+                            <p class="mt-1 text-xs text-gray-400">To change your login email, visit account settings.</p>
+                        </div>
+
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                            <input id="phone" name="phone" type="tel"
+                                   value="{{ old('phone', $jobSeeker->phone) }}"
+                                   placeholder="+1 (868) 000-0000"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            @error('phone')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -100,43 +207,138 @@
                 </form>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="rounded-3xl bg-white p-8 shadow border border-gray-100">
-                    <h3 class="font-semibold text-xl mb-4">Upload Resume</h3>
+            {{-- Upload default resume --}}
+            <div class="rounded-3xl bg-white p-8 shadow border border-gray-100">
+                <h3 class="font-semibold text-xl mb-1">Default Resume</h3>
+                <p class="text-sm text-gray-500 mb-5">
+                    This resume is used as the default for quick applications. You can still upload a custom resume for specific jobs.
+                </p>
 
-                    <form method="POST" action="{{ route('jobseeker.profile.resume.upload') }}" enctype="multipart/form-data" class="space-y-4">
-                        @csrf
-
-                        <input type="file" name="resume" accept=".pdf,.doc,.docx" class="block w-full text-sm text-gray-700">
-
-                        @error('resume')
-                            <p class="text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-
-                        <x-likeslocale.button type="submit" variant="secondary">
-                            Upload Resume
-                        </x-likeslocale.button>
-                    </form>
-                </div>
-
-                <div class="rounded-3xl bg-white p-8 shadow border border-gray-100">
-                    <h3 class="font-semibold text-xl mb-4">Upload Cover Letter</h3>
-
-                    <form method="POST" action="{{ route('jobseeker.profile.cover-letter.upload') }}" enctype="multipart/form-data" class="space-y-4">
-                        @csrf
-
-                        <input type="file" name="cover_letter" accept=".pdf,.doc,.docx" class="block w-full text-sm text-gray-700">
-
-                        @error('cover_letter')
-                            <p class="text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-
-                        <x-likeslocale.button type="submit" variant="secondary">
-                            Upload Cover Letter
-                        </x-likeslocale.button>
-                    </form>
-                </div>
+                <form x-data="{ loading: false }"
+                      method="POST"
+                      action="{{ route('jobseeker.profile.resume.upload') }}"
+                      enctype="multipart/form-data">
+                    @csrf
+                    <label class="block cursor-pointer" :class="loading ? 'opacity-50 pointer-events-none' : ''">
+                        <input type="file"
+                               name="resume"
+                               accept=".pdf,.doc,.docx"
+                               class="sr-only"
+                               @change="loading = true; $el.closest('form').submit()">
+                        <div class="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 hover:border-[#6f4cb2]/40 hover:bg-violet-50/30 transition-all p-4 text-sm text-gray-500">
+                            <x-heroicon-o-document-arrow-up class="w-4 h-4 shrink-0" />
+                            <span x-show="!loading">{{ $jobSeeker->resume_path ? 'Replace resume (PDF, DOC, DOCX)' : 'Upload resume (PDF, DOC, DOCX)' }}</span>
+                            <span x-show="loading" x-cloak>Uploading…</span>
+                        </div>
+                    </label>
+                    @error('resume')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </form>
             </div>
+        </div>
+    </div>
+
+    {{-- Compliance Documents --}}
+    <div class="mt-6 rounded-3xl bg-white p-8 shadow border border-gray-100">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-900">Compliance Documents</h3>
+                <p class="mt-1 text-sm text-gray-500">Upload the required identity, compliance, and qualification documents for your profile.</p>
+            </div>
+
+            @php
+                $uploadedCount = $jobSeeker->documents->whereNotIn('document_type', [\App\Models\JobSeekerDocument::TYPE_PROFILE_PHOTO])->count();
+                $totalCount = count(\App\Models\JobSeekerDocument::TYPES) - 1;
+            @endphp
+
+            <x-likeslocale.status-pill :tone="$uploadedCount === $totalCount ? 'success' : 'warning'">
+                {{ $uploadedCount }} / {{ $totalCount }} documents uploaded
+            </x-likeslocale.status-pill>
+        </div>
+
+        @php $docsByType = $jobSeeker->documents->keyBy('document_type'); @endphp
+
+        <div class="mt-8 space-y-8">
+            @foreach(\App\Models\JobSeekerDocument::CATEGORIES as $categoryLabel => $types)
+                <div>
+                    <h4 class="text-sm font-semibold uppercase tracking-[0.16em] text-gray-400 mb-4">{{ $categoryLabel }}</h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        @foreach($types as $type)
+                            @php
+                                $existing = $docsByType[$type] ?? null;
+                                $label = \App\Models\JobSeekerDocument::labelFor($type);
+                                $accept = \App\Models\JobSeekerDocument::acceptAttrFor($type);
+                            @endphp
+
+                            <div class="rounded-2xl border p-5 {{ $existing ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-gray-50/60' }}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <p class="text-sm font-semibold text-gray-900 leading-snug">{{ $label }}</p>
+
+                                    @if($existing)
+                                        <x-likeslocale.status-pill tone="success">Uploaded</x-likeslocale.status-pill>
+                                    @else
+                                        <x-likeslocale.status-pill tone="neutral">Not uploaded</x-likeslocale.status-pill>
+                                    @endif
+                                </div>
+
+                                @if($existing)
+                                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                                        <a href="{{ asset('storage/' . $existing->file_path) }}"
+                                           target="_blank"
+                                           class="text-sm font-medium text-[#6f4cb2] hover:underline">
+                                            View document
+                                        </a>
+
+                                        <span class="text-gray-300">|</span>
+
+                                        <span class="text-xs text-gray-500">
+                                            Uploaded {{ $existing->uploaded_at?->format('M d, Y') }}
+                                        </span>
+                                    </div>
+
+                                    <form method="POST"
+                                          action="{{ route('jobseeker.documents.destroy', $existing) }}"
+                                          class="mt-2"
+                                          onsubmit="return confirm('Remove this {{ $label }}?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs text-red-500 hover:text-red-700 hover:underline font-medium">
+                                            Remove
+                                        </button>
+                                    </form>
+                                @endif
+
+                                {{-- Single-action upload zone --}}
+                                <form x-data="{ loading: false }"
+                                      method="POST"
+                                      action="{{ route('jobseeker.documents.store') }}"
+                                      enctype="multipart/form-data"
+                                      class="mt-4">
+                                    @csrf
+                                    <input type="hidden" name="document_type" value="{{ $type }}">
+                                    <label class="block cursor-pointer" :class="loading ? 'opacity-50 pointer-events-none' : ''">
+                                        <input type="file"
+                                               name="file"
+                                               accept="{{ $accept }}"
+                                               class="sr-only"
+                                               @change="loading = true; $el.closest('form').submit()">
+                                        <div class="flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed {{ $existing ? 'border-green-200 hover:border-green-400' : 'border-gray-200 hover:border-[#6f4cb2]/40 hover:bg-violet-50/30' }} bg-white/60 transition-all p-2.5 text-xs text-gray-500">
+                                            <x-heroicon-o-arrow-up-tray class="w-3.5 h-3.5 shrink-0" />
+                                            <span x-show="!loading">{{ $existing ? 'Replace' : 'Upload' }}</span>
+                                            <span x-show="loading" x-cloak>Uploading…</span>
+                                        </div>
+                                    </label>
+                                    @error('file')
+                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </form>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
         </div>
     </div>
 </x-layouts.portal>

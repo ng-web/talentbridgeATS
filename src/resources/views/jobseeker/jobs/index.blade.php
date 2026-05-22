@@ -12,62 +12,50 @@
                 </x-likeslocale.button>
             </div>
 
-            <form id="job-filter-form" method="GET" action="{{ route('jobseeker.jobs.index') }}" class="mt-6 space-y-4">
+            <form id="job-filter-form" method="GET" action="{{ route('jobseeker.jobs.index') }}" class="mt-4 space-y-3">
                 <datalist id="job-location-suggestions">
                     @foreach($availableLocations as $location)
                         <option value="{{ $location }}"></option>
                     @endforeach
                 </datalist>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div>
-                        <label for="keyword" class="block text-sm font-medium text-gray-700">Keywords</label>
-                        <input id="keyword"
-                               name="keyword"
-                               type="text"
-                               value="{{ $filters['keyword'] ?? '' }}"
-                               class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm"
-                               placeholder="Job title, company, category">
-                    </div>
+                <div class="flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap items-center gap-3">
+                    <input id="keyword"
+                           name="keyword"
+                           type="text"
+                           value="{{ $filters['keyword'] ?? '' }}"
+                           class="flex-1 min-w-0 w-full sm:w-auto rounded-2xl border-gray-300 shadow-sm"
+                           placeholder="Job title, company, or category">
 
-                    <div>
-                        <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
-                        <input id="location"
-                               name="location"
-                               type="text"
-                               list="job-location-suggestions"
-                               value="{{ $filters['location'] ?? '' }}"
-                               class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm"
-                               placeholder="Start typing a location">
-                    </div>
+                    <input id="location"
+                           name="location"
+                           type="text"
+                           list="job-location-suggestions"
+                           value="{{ $filters['location'] ?? '' }}"
+                           class="flex-1 min-w-0 w-full sm:w-auto rounded-2xl border-gray-300 shadow-sm"
+                           placeholder="Location">
 
-                    <div>
-                        <label for="listing_type" class="block text-sm font-medium text-gray-700">Type</label>
-                        <select id="listing_type" name="listing_type" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                            <option value="">All Types</option>
-                            @foreach($availableTypes as $type)
-                                <option value="{{ $type }}" @selected(($filters['listing_type'] ?? '') === $type)>
-                                    {{ \App\Models\Job::listingTypeLabelFor($type) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <select id="listing_type" name="listing_type" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                        <option value="">All Types</option>
+                        @foreach($availableTypes as $type)
+                            <option value="{{ $type }}" @selected(($filters['listing_type'] ?? '') === $type)>
+                                {{ \App\Models\Job::listingTypeLabelFor($type) }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                    <div>
-                        <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                        <select id="category" name="category" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                            <option value="">All Categories</option>
-                            @foreach($availableCategories as $category)
-                                <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>
-                                    {{ $category }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <select id="category" name="category" class="w-full sm:w-44 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                        <option value="">All Categories</option>
+                        @foreach($availableCategories as $category)
+                            <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>
+                                {{ $category }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <label class="inline-flex items-center gap-3 text-sm text-gray-700">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <label class="inline-flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer">
                         <input type="checkbox"
                                name="remote_only"
                                value="1"
@@ -76,9 +64,9 @@
                         <span>Remote positions only</span>
                     </label>
 
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <x-likeslocale.button type="submit">
-                            Search Jobs
+                    <div class="flex gap-3 shrink-0">
+                        <x-likeslocale.button type="submit" variant="accent">
+                            Search
                         </x-likeslocale.button>
 
                         <a href="{{ route('jobseeker.jobs.index') }}"

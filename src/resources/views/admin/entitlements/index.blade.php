@@ -175,56 +175,52 @@
 
         <div class="xl:col-span-2">
             <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-900">Current Entitlements</h3>
-                    <p class="mt-1 text-sm text-gray-500">Manage active and inactive access records.</p>
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900">Current Entitlements</h3>
+                        <p class="mt-1 text-sm text-gray-500">Manage active and inactive access records.</p>
+                    </div>
+
+                    <div>
+                        <x-likeslocale.button :href="route('admin.employers.create')" variant="accent">
+                            Add Employer / Sponsor
+                        </x-likeslocale.button>
+                    </div>
                 </div>
 
-                <form id="entitlement-filters-form" method="GET" action="{{ route('admin.entitlements.index') }}" class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="md:col-span-2">
-                        <label for="q" class="block text-sm font-medium text-gray-700">Search users</label>
-                        <input
-                            id="q"
-                            name="q"
-                            type="text"
-                            value="{{ $filters['q'] ?? '' }}"
-                            placeholder="Search by user name or email"
-                            class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm"
-                        >
-                        <p class="mt-2 text-xs text-gray-500">Filters update automatically as you type.</p>
-                    </div>
+                <form id="entitlement-filters-form" method="GET" action="{{ route('admin.entitlements.index') }}" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <input
+                        id="q"
+                        name="q"
+                        type="text"
+                        value="{{ $filters['q'] ?? '' }}"
+                        placeholder="Search by user name or email"
+                        class="flex-1 min-w-0 w-full sm:w-auto rounded-2xl border-gray-300 shadow-sm"
+                    >
 
-                    <div>
-                        <label for="filter_type" class="block text-sm font-medium text-gray-700">Type</label>
-                        <select id="filter_type" name="type" class="portal-form-select mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                            <option value="">All types</option>
-                            @foreach(\App\Models\Entitlement::TYPES as $entitlementType)
-                                <option value="{{ $entitlementType }}" @selected(($filters['type'] ?? '') === $entitlementType)>
-                                    {{ \App\Models\Entitlement::typeLabelFor($entitlementType) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <select id="filter_type" name="type" class="w-full sm:w-44 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                        <option value="">All types</option>
+                        @foreach(\App\Models\Entitlement::TYPES as $entitlementType)
+                            <option value="{{ $entitlementType }}" @selected(($filters['type'] ?? '') === $entitlementType)>
+                                {{ \App\Models\Entitlement::typeLabelFor($entitlementType) }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                    <div>
-                        <label for="filter_status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select id="filter_status" name="status" class="portal-form-select mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                            <option value="">All statuses</option>
-                            @foreach(\App\Models\Entitlement::STATUSES as $entitlementStatus)
-                                <option value="{{ $entitlementStatus }}" @selected(($filters['status'] ?? '') === $entitlementStatus)>
-                                    {{ \App\Models\Entitlement::labelFor($entitlementStatus) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <select id="filter_status" name="status" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                        <option value="">All statuses</option>
+                        @foreach(\App\Models\Entitlement::STATUSES as $entitlementStatus)
+                            <option value="{{ $entitlementStatus }}" @selected(($filters['status'] ?? '') === $entitlementStatus)>
+                                {{ \App\Models\Entitlement::labelFor($entitlementStatus) }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                    <div class="md:col-span-4 flex justify-end">
-                        <a href="{{ route('admin.entitlements.index') }}">
-                            <x-likeslocale.button type="button" variant="secondary">
-                                Reset
-                            </x-likeslocale.button>
-                        </a>
-                    </div>
+                    <a href="{{ route('admin.entitlements.index') }}" class="shrink-0">
+                        <x-likeslocale.button type="button" variant="secondary">
+                            Reset
+                        </x-likeslocale.button>
+                    </a>
                 </form>
 
                 <div id="entitlements-list-region">

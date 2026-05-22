@@ -53,11 +53,15 @@ final class Job extends Model
         'status',
         'is_approved',
         'remote_flag',
+        'application_deadline',
+        'duration',
+        'eligibility',
     ];
 
     protected $casts = [
         'is_approved' => 'boolean',
         'remote_flag' => 'boolean',
+        'application_deadline' => 'date',
     ];
 
     public function employer(): BelongsTo

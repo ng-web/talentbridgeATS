@@ -83,6 +83,11 @@
                             <span>Dashboard</span>
                         </a>
 
+                        <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 {{ request()->routeIs('admin.users.*') ? 'bg-white/20' : 'hover:bg-white/10' }}">
+                            <x-heroicon-o-users class="w-5 h-5" />
+                            <span>Users</span>
+                        </a>
+
                         <a href="{{ route('admin.jobs.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('admin.jobs.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10 hover:translate-x-1' }}">
                             <x-heroicon-o-cog-6-tooth class="w-5 h-5" />
                             <span>Manage Jobs</span>
@@ -257,6 +262,10 @@
                             @endif
                         </div>
                     </div>
+                    <div class="flex items-center gap-4">
+                        <!-- 🔔 Notifications -->
+                        <x-notification-bell />
+                    </div>
                 </div>
             </header>
 
@@ -266,19 +275,27 @@
                         x-data="{ open: true }"
                         x-init="setTimeout(() => open = false, 3500)"
                         x-show="open"
-                        x-transition
-                        class="rounded-2xl border px-4 py-3 text-sm font-medium flex items-start justify-between gap-4
-                            {{ session('error')
-                                ? 'border-red-200 bg-red-50 text-red-700'
-                                : 'border-green-200 bg-green-50 text-green-800' }}"
+                        x-transition:enter="transform ease-out duration-300 transition"
+                        x-transition:enter-start="translate-y-2 opacity-0"
+                        x-transition:enter-end="translate-y-0 opacity-100"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="fixed top-6 right-6 z-50 w-full max-w-sm rounded-2xl border px-4 py-3 text-sm font-medium shadow-xl"
+                        :class="{
+                            'border-green-200 bg-green-50 text-green-800': {{ session('error') ? 'false' : 'true' }},
+                            'border-red-200 bg-red-50 text-red-700': {{ session('error') ? 'true' : 'false' }}
+                        }"
                     >
-                        <div>
-                            {{ session('success') ?? session('status') ?? session('error') }}
-                        </div>
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="pr-2">
+                                {{ session('success') ?? session('status') ?? session('error') }}
+                            </div>
 
-                        <button type="button" @click="open = false" class="shrink-0 text-current opacity-70 hover:opacity-100">
-                            <x-heroicon-o-x-mark class="w-5 h-5" />
-                        </button>
+                            <button type="button" @click="open = false" class="shrink-0 text-current opacity-70 hover:opacity-100">
+                                <x-heroicon-o-x-mark class="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 @endif
 

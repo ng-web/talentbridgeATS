@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'seeker.access' => \App\Http\Middleware\EnsureActiveSeekerAccess::class,
             'employer.posting.access' => \App\Http\Middleware\EnsureActiveEmployerPostingAccess::class,
+            'password.change.required' => \App\Http\Middleware\EnsurePasswordChanged::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

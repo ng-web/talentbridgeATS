@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,7 @@ final class JobSeeker extends Model
         'user_id',
         'date_of_birth',
         'location',
+        'phone',
         'education',
         'experience_summary',
         'skills',
@@ -34,5 +36,15 @@ final class JobSeeker extends Model
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(JobSeekerDocument::class);
+    }
+
+    public function documentsByType(): Collection
+    {
+        return $this->documents->keyBy('document_type');
     }
 }

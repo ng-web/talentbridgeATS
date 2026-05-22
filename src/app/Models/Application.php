@@ -9,27 +9,40 @@ final class Application extends Model
 {
     public const STATUS_APPLIED = 'applied';
     public const STATUS_REVIEWING = 'reviewing';
-    public const STATUS_INTERVIEW = 'interview';
+    public const STATUS_SHORTLISTED = 'shortlisted';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_PLACED = 'placed';
-    public const STATUS_REJECTED = 'rejected';
+    public const STATUS_NOT_SELECTED = 'not_selected';
+    public const STATUS_WITHDRAWN = 'withdrawn';
 
     public const STATUSES = [
         self::STATUS_APPLIED,
         self::STATUS_REVIEWING,
-        self::STATUS_INTERVIEW,
+        self::STATUS_SHORTLISTED,
         self::STATUS_APPROVED,
         self::STATUS_PLACED,
-        self::STATUS_REJECTED,
+        self::STATUS_NOT_SELECTED,
+        self::STATUS_WITHDRAWN,
+    ];
+
+    // Statuses visible in employer pipeline (excludes withdrawn)
+    public const EMPLOYER_STATUSES = [
+        self::STATUS_APPLIED,
+        self::STATUS_REVIEWING,
+        self::STATUS_SHORTLISTED,
+        self::STATUS_APPROVED,
+        self::STATUS_PLACED,
+        self::STATUS_NOT_SELECTED,
     ];
 
     public const STATUS_LABELS = [
         self::STATUS_APPLIED => 'Applied',
         self::STATUS_REVIEWING => 'Reviewing',
-        self::STATUS_INTERVIEW => 'Interview',
+        self::STATUS_SHORTLISTED => 'Shortlisted',
         self::STATUS_APPROVED => 'Approved',
         self::STATUS_PLACED => 'Placed',
-        self::STATUS_REJECTED => 'Rejected',
+        self::STATUS_NOT_SELECTED => 'Not Selected',
+        self::STATUS_WITHDRAWN => 'Withdrawn',
     ];
 
     protected $fillable = [
@@ -39,6 +52,7 @@ final class Application extends Model
         'applied_at',
         'submitted_resume_path',
         'submitted_cover_letter_path',
+        'notes',
     ];
 
     protected $casts = [
@@ -64,8 +78,9 @@ final class Application extends Model
     {
         return match ($status) {
             self::STATUS_APPROVED, self::STATUS_PLACED => 'success',
-            self::STATUS_REVIEWING, self::STATUS_INTERVIEW => 'info',
-            self::STATUS_REJECTED => 'danger',
+            self::STATUS_REVIEWING, self::STATUS_SHORTLISTED => 'info',
+            self::STATUS_NOT_SELECTED => 'danger',
+            self::STATUS_WITHDRAWN => 'neutral',
             default => 'neutral',
         };
     }

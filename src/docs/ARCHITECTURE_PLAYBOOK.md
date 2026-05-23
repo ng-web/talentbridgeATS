@@ -1,603 +1,568 @@
-Reusable Architecture for Platforms, Portals, and SaaS Systems
+# Likeslocale SaaS Architecture Playbook
+**v2 — Updated from live production build: Kairox Exchange**
 
 Author: Likeslocale
 Purpose: Standardize the design and development of scalable SaaS platforms.
 
-This document defines the architecture patterns, development rules, and reusable modules used when building digital platforms under the Likeslocale ecosystem.
+This document defines the architecture patterns, development rules, reusable modules, and hard-won lessons used when building digital platforms under the Likeslocale ecosystem.
 
-These standards ensure that every platform is:
+---
 
-scalable
+## Core Philosophy
 
-modular
+Likeslocale builds solutions, not websites.
 
-maintainable
-
-pilot-ready
-
-reusable across projects
-
-Core Philosophy
-
-Likeslocale builds solutions, not just websites.
-
-Platforms should always be designed with these goals:
-
-reusable architecture
-
-modular components
-
-centralized domain logic
-
-scalable workflows
-
-operational clarity
-
-pilot readiness
-
-SaaS product potential
+Every platform must be:
+- Scalable from pilot to production
+- Modular enough to reuse across projects
+- Maintainable by any Likeslocale engineer
+- Pilot-ready from day one
+- Architected toward SaaS productization
 
 Every system should be evaluated as if it could become:
+- A reusable internal framework
+- A white-label product
+- A future SaaS platform
 
-a reusable internal framework
+---
 
-a white-label product
+## Standard SaaS Platform Layers
 
-a future SaaS platform
+Every platform follows this six-layer architecture.
 
-Standard SaaS Platform Layers
+### Layer 1 — Public Layer
+Marketing or entry layer. Lightweight, branded, clear CTA.
 
-Every platform should follow this layered architecture.
+Components: landing page, pricing, feature highlights, login/register entry.
 
-Public Layer
-Authentication Layer
-Role Portal Layer
-Business Domain Layer
-Integration Layer
-Infrastructure Layer
-Public Layer
+### Layer 2 — Authentication Layer
+Secure access control using Laravel Auth + Spatie Laravel Permission.
 
-Purpose:
-Public marketing or entry layer.
+Roles: `admin`, `employer`, `job_seeker`, `vendor`, `manager`, `client`, `operator` (use what applies).
 
-Typical features:
+Always implement:
+- Role-based redirect after login (never a generic `/dashboard` for all roles)
+- Forced password change for provisioned/admin-created accounts
+- Session-based auth (social login optional at Phase 2)
 
-landing pages
+### Layer 3 — Role Portal Layer
+After login, users enter a role-specific portal.
 
-platform overview
+Routes: `/admin/dashboard`, `/employer/dashboard`, `/jobseeker/dashboard`
 
-pricing
+The portal shell is a single reusable Blade component parameterized by `portalRole`. Navigation links are conditional inside the shared shell. Never build a separate layout per role — parameterize one.
 
-login / registration
+### Layer 4 — Business Domain Layer
+Core entities, statuses, workflows, ownership rules. All domain logic centralized in model constants.
 
-onboarding entry
+### Layer 5 — Integration Layer
+Payment gateways, email, AI services, external APIs. Always implemented as Service classes under `App\Services\`. Never put API logic in controllers.
 
-Key rules:
+### Layer 6 — Infrastructure Layer
+Docker, Nginx, MySQL, Redis (optional), queue workers. Config via `.env` only. Never hardcode environment-specific behavior.
 
-lightweight
+---
 
-branded
+## Domain Status Registry Pattern
 
-clear call-to-action
+**The most important architecture rule.**
 
-SEO-friendly when needed
+Status strings must never be scattered across controllers, views, forms, or seeders.
 
-Common components:
+Every domain entity with a status must define:
 
-hero sections
-
-CTA blocks
-
-pricing tables
-
-feature highlights
-
-authentication entry points
-
-Authentication Layer
-
-Purpose:
-Secure access control.
-
-Standard approach:
-
-Laravel authentication
-
-role-based access
-
-session-based auth
-
-optional social login
-
-Roles should be managed through:
-
-Spatie Laravel Permission
-
-Example roles:
-
-admin
-employer
-job_seeker
-vendor
-manager
-client
-operator
-Role Portal Layer
-
-After authentication, users should enter a role-specific portal.
-
-Each role should have its own dashboard.
-
-Example:
-
-/admin/dashboard
-/employer/dashboard
-/jobseeker/dashboard
-
-Rules:
-
-dashboards must be role-specific
-
-minimal cross-role confusion
-
-simple navigation
-
-Business Domain Layer
-
-This layer represents the actual system logic.
-
-Examples:
-
-job marketplace
-
-vendor system
-
-applicant tracking
-
-bookings
-
-listings
-
-workflows
-
-Domain models should be clearly defined and centralized.
-
-Example domain entities:
-
-User
-Employer
-JobSeeker
-Job
-Application
-Payment
-Entitlement
-Program
-Vendor
-Listing
-Booking
-Integration Layer
-
-External services integrate here.
-
-Examples:
-
-payment gateways
-
-email systems
-
-AI services
-
-third-party APIs
-
-Integrations should be implemented through:
-
-Service classes
-
-Example:
-
-App\Services\WiPayHostedCheckoutService
-
-Never place API logic directly in controllers.
-
-Infrastructure Layer
-
-Infrastructure concerns include:
-
-Docker containers
-
-web servers
-
-queue workers
-
-storage
-
-environment configuration
-
-Preferred infrastructure:
-
-Docker
-Nginx
-MySQL
-Redis (optional)
-
-Deployment targets may include:
-
-Vultr
-
-DigitalOcean
-
-AWS
-
-Domain Status Registry Pattern
-
-One of the most important architecture rules.
-
-Statuses must never be hardcoded in views.
-
-Statuses must always live in models or enums.
-
-Example:
-
-class Application
+```php
+class Job extends Model
 {
-    public const STATUS_APPLIED = 'applied';
-    public const STATUS_REVIEWING = 'reviewing';
-    public const STATUS_INTERVIEW = 'interview';
-    public const STATUS_APPROVED = 'approved';
-    public const STATUS_PLACED = 'placed';
-    public const STATUS_REJECTED = 'rejected';
+    const STATUS_PENDING_REVIEW = 'pending_review';
+    const STATUS_PUBLISHED      = 'published';
+    const STATUS_ARCHIVED       = 'archived';
+
+    const STATUSES = [
+        self::STATUS_PENDING_REVIEW,
+        self::STATUS_PUBLISHED,
+        self::STATUS_ARCHIVED,
+    ];
+
+    const STATUS_LABELS = [
+        self::STATUS_PENDING_REVIEW => 'Pending Review',
+        self::STATUS_PUBLISHED      => 'Published',
+        self::STATUS_ARCHIVED       => 'Archived',
+    ];
+
+    public static function labelFor(string $status): string
+    {
+        return self::STATUS_LABELS[$status] ?? ucfirst($status);
+    }
+
+    public static function toneFor(string $status): string
+    {
+        return match($status) {
+            self::STATUS_PUBLISHED      => 'green',
+            self::STATUS_PENDING_REVIEW => 'yellow',
+            self::STATUS_ARCHIVED       => 'gray',
+            default                     => 'gray',
+        };
+    }
 }
+```
+
+| Consumer | Uses |
+|----------|------|
+| Views | `Job::STATUS_LABELS`, `Job::labelFor()`, `Job::toneFor()` |
+| Controllers | `Rule::in(Job::STATUSES)` |
+| Seeders | `Job::STATUS_PENDING_REVIEW` |
+| Middleware | `Job::STATUS_PUBLISHED` |
+
+This prevents status drift. If a status string changes, it changes in one place.
+
+---
+
+## Reference Data Architecture
+
+**Lesson from production:** Free-text categorical fields cause permanent data inconsistency. "St. Elizabeth" ≠ "st elizabeth" in filters, reports, and validation. This is unfixable without a migration.
+
+### The Rule
+Any field where values must be consistent and selectable must be backed by a database table with admin CRUD management.
+
+Never use free-text inputs for: countries, regions/cities, categories, industry sectors, types, plan names.
+
+### Standard Schema
+```php
+// Simple lookup table
+$table->id();
+$table->string('name')->unique();
+$table->boolean('is_active')->default(true);
+$table->timestamps();
+
+// Hierarchical lookup (e.g. locations under countries)
+$table->foreignId('country_id')->constrained()->cascadeOnDelete();
+$table->string('name');
+$table->unique(['country_id', 'name']);
+```
+
+### Validation Pattern
+```php
+'category' => ['nullable', Rule::exists('job_categories', 'name')->where('is_active', true)],
+'country'  => ['required', Rule::exists('countries', 'name')->where('is_active', true)],
+'location' => ['nullable', 'string', 'max:255'], // validated separately against country
+```
+
+For hierarchical validation (location must belong to selected country):
+```php
+if (!empty($validated['location'])) {
+    $countryId = Country::where('name', $validated['country'])->value('id');
+    $valid = Location::where('country_id', $countryId)
+        ->where('name', $validated['location'])
+        ->where('is_active', true)
+        ->exists();
+    if (!$valid) {
+        return back()->withErrors(['location' => 'Invalid location for selected country.'])->withInput();
+    }
+}
+```
+
+### Admin CRUD
+A single `Admin\ReferenceDataController` manages all lookup tables. One view at `/admin/reference-data` with add/remove panels per table.
+
+---
+
+## Alpine.js + Blade Integration Standards
+
+**Lesson from production:** `@json()` inside double-quoted HTML attributes embeds literal `"` characters that break HTML attribute parsing. The browser sees the first `"` inside the JSON as the closing delimiter. Alpine.js never receives the full data. Silent failure — no error shown.
+
+### JSON Injection Rule
+
+```blade
+{{-- NEVER: double-quotes in JSON break the HTML attribute --}}
+<div x-data="{ items: @json($items) }">
+
+{{-- ALWAYS: script tag is safe for JSON --}}
+<script>const __myData = @json($data);</script>
+<div x-data="{ items: __myData }">
+```
+
+Use a descriptive `__double_underscore_prefixed` const to avoid naming collisions.
+
+### Cascading Dropdown Pattern
+
+Minimize the Alpine payload — pluck only what the template needs:
+
+```php
+// Controller — produces {"Jamaica": ["Kingston", "Montego Bay"], ...}
+'locations' => Location::where('is_active', true)
+    ->with('country')
+    ->orderBy('name')
+    ->get()
+    ->groupBy('country.name')
+    ->map(fn($g) => $g->pluck('name')),
+```
+
+```blade
+{{-- View --}}
+<script>const __jobLocations = @json($locations);</script>
+<div
+    x-data="{
+        country: '{{ old('country') }}',
+        allLocations: __jobLocations,
+        get filteredLocations() {
+            return this.allLocations[this.country] ?? [];
+        }
+    }"
+>
+    <select name="country" x-model="country">
+        @foreach($countries as $c)
+            <option value="{{ $c->name }}" @selected(old('country') === $c->name)>
+                {{ $c->name }}
+            </option>
+        @endforeach
+    </select>
+
+    <select name="location">
+        <option value="">Select location</option>
+        {{-- loc is a plain string since we pluck('name') --}}
+        <template x-for="loc in filteredLocations" :key="loc">
+            <option :value="loc" :selected="loc === '{{ old('location') }}'" x-text="loc"></option>
+        </template>
+    </select>
+</div>
+```
 
-Views should reference:
+### Blade Expression Syntax
 
-Application::STATUSES
+Always use double closing braces. A single `}` causes a 500 compilation error.
 
-Controllers should validate against:
+```blade
+{{ old('field') }}          ✅ correct
+{{ old('field') }           ✗ causes "Unclosed '(' does not match '}'" error
+```
+
+After Blade changes, verify compilation:
+```bash
+docker exec app php artisan view:clear
+docker exec app php artisan view:cache  # no output = clean
+```
+
+---
 
-Rule::in(Application::STATUSES)
+## Payment, Access, and Gating Architecture
 
-Seeders should use:
+### The Access Flow
 
-Application::STATUS_APPLIED
+```
+Payment Record → Gateway → Callback Verification → Entitlement Activation → Middleware → UX Access
+```
 
-This prevents status drift.
+**Never:** Payment → UI access directly. UI hiding is not access control.
 
-Reusable Dashboard System
+### Rules
 
-All Likeslocale platforms should share a reusable dashboard component system.
+- Entitlements are separate database records from payments
+- Access is never determined from payment records
+- Middleware enforces access — not controllers, not views
+- All entitlement fields checked: `type`, `status`, `expires_at >= now()`, `starts_at <= now()`
+- Entitlement activation is idempotent via `entitlement_activated_at`
 
-Core components:
+### Race Condition Prevention
 
-Stat Cards
+```php
+DB::transaction(function () use ($payment) {
+    $locked = Payment::where('id', $payment->id)->lockForUpdate()->first();
 
-Used for metrics.
+    if ($locked->entitlement_activated_at !== null) {
+        return; // Already activated — idempotent exit
+    }
 
-Examples:
+    Entitlement::create([...]);
+    $locked->update(['entitlement_activated_at' => now()]);
+});
+```
 
-Jobs Published
+### Middleware Template
 
-Applications Received
+```php
+$hasAccess = Entitlement::where('user_id', $user->id)
+    ->where('type', 'employer_posting_access')
+    ->where('status', 'active')
+    ->where('expires_at', '>=', now())
+    ->where(function ($q) {
+        $q->whereNull('starts_at')
+          ->orWhere('starts_at', '<=', now());
+    })
+    ->exists();
+```
 
-Profile Completion
+Missing `starts_at` check is a common gap — always include it.
 
-Active Listings
+---
 
-Structure:
+## Controller and Route Hygiene
 
-title
-metric value
-icon
-optional trend
-Progress Cards
+**Lesson from production:** A dead controller with dangerous auto-approve logic existed alongside the real controller. It was never wired to routes but represented a significant future risk.
 
-Used for onboarding or profile completion.
+### Rules
 
-Example:
+1. One controller per resource per role. Never two controllers handling the same resource.
+2. Run `php artisan route:list` and audit every route→controller mapping before adding features.
+3. Delete dead controllers, methods, and views immediately. Never leave unreachable code.
+4. Admin-only state transitions (approve, archive) belong exclusively in admin controllers.
+5. Employer/user-facing controllers must never auto-approve or change admin-controlled statuses.
 
-Profile Completion
-85%
+### Naming Convention
+```
+Admin\JobController      → approve, archive, setPending
+Employer\JobController   → create, store, edit, update (status set to pending_review only)
+JobSeeker\JobController  → index, show
+```
 
-Often displayed as:
+---
 
-progress bar
+## Model and Database Standards
 
-circular progress
+### Mass Assignment Audit
 
-checklist
+When adding a migration column, update `$fillable` AND `$casts` in the same commit.
 
-Status Pills
+Missing `$fillable` silently drops fields — form submits successfully but data never saves. No error is thrown.
 
-Small visual indicators.
+```php
+protected $fillable = [
+    // Add new fields here at the same time as the migration
+    'salary_min', 'salary_max', 'fees',
+];
 
-Used for:
+protected $casts = [
+    'salary_min'  => 'integer',
+    'salary_max'  => 'integer',
+    'is_active'   => 'boolean',
+    'remote_flag' => 'boolean',
+    'expires_at'  => 'datetime',
+];
+```
 
-application status
+### Soft Deletes
 
-job status
+Use soft deletes on records with financial, audit, or referential significance: payments, entitlements, applications, user profiles.
 
-payment status
+### Migration Discipline
 
-entitlement status
+```bash
+# Always use --force in Docker production containers
+docker exec app php artisan migrate --force
+```
 
-Example:
+Verify migration ran: check row counts or use `php artisan db:table tablename`.
 
-Approved
-Interview
-Pending Review
-Info Cards
+---
 
-Used for:
+## Admin Dashboard — Action Required Pattern
 
-platform tips
+Generic notification counts are useless in production. Replace with an actionable feed:
 
-instructions
+```
+🔴  3 payments not yet activating entitlements   → /admin/payments?unactivated=1
+🟡  5 jobs awaiting approval                      → /admin/jobs?status=pending_review
+🟡  2 payments requiring manual review            → /admin/payments?status=review_required
+🟡  4 entitlements expiring this week             → /admin/entitlements?expiring=1
+```
 
-announcements
+Each item is a clickable `<a>` tag. Zero items = "All clear" state.
 
-Often appear on dashboards.
+### Preserving Custom Filter Params in AJAX Forms
 
-List Interaction Pattern
+Custom params like `?expiring=1` must persist when other filter controls are used:
 
-Lists should follow a consistent pattern.
+```blade
+@if($filters['expiring'] ?? false)
+    <input type="hidden" name="expiring" value="1">
+@endif
+```
 
-Example:
+Without this, clicking any other filter drops the custom param and reloads the unfiltered list.
 
-jobs list
-applications list
-users list
-vendors list
+---
 
-Rules:
+## Reusable Dashboard Component System
 
-entire row clickable
+All platforms share a standard dashboard component system.
 
-status visible
+| Component | Usage |
+|-----------|-------|
+| `x-likeslocale.stat-card` | Metric with icon and optional trend |
+| `x-likeslocale.info-card` | Tips, instructions, announcements |
+| `x-likeslocale.progress-card` | Profile completion, onboarding |
+| `x-likeslocale.status-pill` | Status indicator with color from `toneFor()` |
+| `x-likeslocale.button` | Primary, outline, accent, danger variants |
 
-primary action clear
+Status pills consume `toneFor()` from model constants — never hardcode colors in views.
 
-secondary actions available
+---
 
-Access Control Pattern
+## Document and Asset Ownership
 
-Access should not be based solely on roles.
+| Type | Stored On | Label |
+|------|-----------|-------|
+| Default resume | User/JobSeeker profile | "Default Resume" |
+| Submitted resume | Application record | "Submitted Resume" |
+| Cover letter | Application record (always) | "Cover Letter" |
+| Company logo | Employer profile | "Company Logo" |
+| Bid attachment | Bid/quote record | "Bid Attachment" |
 
-Use entitlements for gated features.
+The workflow record is the source of truth for submitted documents. Do not assume a profile document is what was submitted. Store a copy at submission time.
 
-Example:
+---
 
-job_seeker_access
-employer_posting_access
-vendor_access
-premium_access
+## Observability and Logging
 
-Access logic:
+Log all critical flows:
 
-User -> Entitlements -> isActive()
+| Event | Log Level |
+|-------|-----------|
+| Payment callback received | info |
+| Payment callback verified/rejected | info/warning |
+| Entitlement activated | info |
+| Duplicate activation blocked | warning |
+| Entitlement denied by middleware | info |
+| Admin grant/revoke | info (AuditLog model) |
+| Destructive admin action | info (AuditLog model) |
 
-Middleware checks entitlement validity.
+Each entry must include: `user_id`, resource ID, action, status before/after, timestamp.
 
-Payment Architecture
+---
 
-Payment systems should follow this structure.
+## Pilot Data Requirements
 
-Payment Record
-↓
-External Gateway
-↓
-Callback Verification
-↓
-Entitlement Activation
+Every platform must ship with a seeder that covers all roles and all states.
 
-Payment records store:
+**Standard accounts:**
+```
+admin@[platform].test           / password
+employer.active@[platform].test / password  (with entitlement)
+employer.locked@[platform].test / password  (without entitlement)
+seeker.active@[platform].test   / password  (with entitlement)
+seeker.locked@[platform].test   / password  (without entitlement)
+```
 
-order_id
-gateway
-external_reference
-amount
-status
-raw_payload
+**Records to seed:**
+- Domain records in all statuses
+- Completed and pending workflows
+- Active and expired entitlements
+- Completed and pending payments
+- Reference data (all lookup tables)
+- Edge cases (expired access, rejected applications)
 
-Entitlements unlock platform features.
+---
 
-Seed Data Pattern
+## Deployment Readiness
 
-Every platform should include pilot demo data.
+| Concern | Rule |
+|---------|------|
+| APP_URL | Must match serving URL exactly |
+| Payment callbacks | Must be publicly accessible HTTPS (ngrok in dev) |
+| Storage links | `php artisan storage:link` on every fresh environment |
+| Config cache | `optimize:clear` after `.env` changes |
+| Migrations | `--force` flag in Docker |
+| Queue workers | Required for mail, scheduled jobs |
+| Asset builds | `npm run build` before deployment |
 
-Seeder should create:
+### Standard Post-Deploy Sequence
+```bash
+docker exec app php artisan migrate --force
+docker exec app php artisan db:seed --class=ReferenceDataSeeder --force
+docker exec app php artisan optimize:clear
+docker exec app php artisan view:clear
+docker exec app php artisan view:cache
+docker exec app php artisan storage:link
+```
 
-demo users
+---
 
-demo records
+## Refactor Discipline
 
-records in multiple states
+Before modifying any existing file:
 
-realistic workflow scenarios
+1. Read the current file
+2. Check `$fillable`, `$casts`, relationships, and helper methods
+3. Check middleware that references this model or method
+4. Check route names used by this controller
+5. Check which views reference this data
+6. Merge carefully — never overwrite blindly
 
-Example accounts:
+Removing a method like `Entitlement::isActive()` silently breaks middleware that calls it. Grep for usages before deleting anything.
 
-admin@test.com
-employer@test.com
-user@test.com
+---
 
-Purpose:
+## Common Pitfalls
 
-platform demos
+| Pitfall | Symptom | Fix |
+|---------|---------|-----|
+| `@json()` in HTML attribute | Alpine silently fails, dropdowns empty | Use `<script>const __data = @json($data);</script>` |
+| Single `}` in Blade `{{ expr }'` | 500 "Unclosed '(' does not match '}'" | Always use double `}}` |
+| Missing `$fillable` field | Data silently dropped on save | Audit `$fillable` when adding migration columns |
+| Dead controller | Wrong logic executed; security risk | Audit route list; delete dead controllers immediately |
+| Missing `starts_at` check | Future-dated entitlements grant immediate access | Check all four entitlement fields in middleware |
+| No idempotency guard | Duplicate callbacks create multiple entitlements | Check `entitlement_activated_at` before activating |
+| Free-text categorical fields | Data inconsistency unfixable without migration | Use DB reference tables with `Rule::exists()` |
+| Custom filter param dropped | Clicking filter loses custom context | Add hidden input to preserve params in AJAX forms |
+| `loc.name` when data is string array | No options rendered | Use `loc` directly when locations are plucked strings |
 
-testing
+---
 
-QA
+## Pre-Ship Checklist
 
-Pilot Readiness Requirements
+### Code
+- [ ] All statuses use model constants — no hardcoded strings
+- [ ] No `@json()` inside double-quoted HTML attributes
+- [ ] All new model fields in `$fillable` and `$casts`
+- [ ] All form fields have `@error` messages
+- [ ] Route list audited — no dead or duplicate controllers
 
-A system is considered pilot-ready when:
+### Access and Security
+- [ ] Middleware checks type, status, `expires_at`, and `starts_at`
+- [ ] Entitlement activation is idempotent (`entitlement_activated_at` guard)
+- [ ] No access control in Blade views
+- [ ] No auto-approve in employer/user-facing controllers
 
-users can complete full workflows
+### UX
+- [ ] All categorical fields are dropdowns from DB reference tables
+- [ ] Cascading dropdowns use `<script>` JSON approach
+- [ ] Locked states have clear messaging and upgrade paths
+- [ ] Empty states exist for all list views
+- [ ] Mobile layout verified
 
-demo data exists
+### Data
+- [ ] Reference data seeded
+- [ ] Pilot demo data covers all roles and statuses
+- [ ] Migrations run cleanly with `--force`
+- [ ] Views compile cleanly with `view:cache`
 
-dashboards show meaningful data
+### Deployment
+- [ ] APP_URL matches serving URL
+- [ ] Payment callback URL is public HTTPS
+- [ ] `storage:link` done
+- [ ] `optimize:clear` done
 
-mobile layout works
+---
 
-errors handled gracefully
+## The Productization Ladder
 
-access control works
+Every client solution should be architected toward this progression:
 
-payments testable
+```
+Client Solution (custom, bespoke)
+    ↓
+Reusable Template (same pattern, new branding)
+    ↓
+Agency Product (sold to multiple clients)
+    ↓
+White-Label Platform (clients resell it)
+    ↓
+Full SaaS Platform (self-serve, multi-tenant, recurring revenue)
+```
 
-Deployment Readiness
+Architecture decisions made at Step 1 determine how fast you reach Step 5.
 
-Deployment considerations:
+---
 
-APP_URL
-ASSET_URL
-HTTPS enforcement
-storage linking
-queue workers
-build assets
-
-Common issues to check:
-
-mixed content errors
-
-asset URL mismatches
-
-payment callback URLs
-
-environment config caching
-
-Refactor Discipline
-
-When refactoring code:
-
-Never blindly replace models.
-
-Always verify:
-
-relationships
-
-helper methods
-
-accessors
-
-middleware dependencies
-
-Example mistake avoided:
-
-Removing:
-
-Entitlement::isActive()
-
-which may break middleware.
-
-Command Support Standard
-
-When providing implementation guidance, always include:
-
-File changes
-
-Exact file paths.
-
-Commands to run
-
-Examples:
-
-php artisan optimize:clear
-php artisan view:clear
-php artisan migrate
-docker compose restart app
-Environment Strategy
-
-Platforms must support:
-
-Local development
-Tunnel testing
-Production deployment
-
-Example:
-
-localhost
-ngrok
-live domain
-
-Environment variables should control behavior.
-
-Example:
-
-FORCE_HTTPS=true
-Future Platform Enhancements
-
-Common future modules:
-
-Messaging systems
-
-Employer ↔ applicant chat.
-
-AI assistance
-
-Matching or recommendation engines.
-
-Analytics dashboards
-
-Admin platform insights.
-
-Multi-tenant SaaS
-
-Convert system to tenant-based architecture.
-
-Likeslocale Design Principle
-
-Every platform should aim to be:
-
-simple for users
-
-powerful for operators
-
-scalable for business
-
-reusable for the agency
-
-Platforms should evolve from:
-
-Client Solution
-↓
-Reusable Template
-↓
-Agency Product
-↓
-Full SaaS Platform
-Using This Playbook
-
-When starting a new project:
-
-Use the following context:
-
-Use the Likeslocale SaaS Architecture Playbook.
-
-Design and build the platform using the reusable patterns defined in this document.
-
-Combine with:
-
-PROJECT_CONTEXT.md
-
-for project-specific information.
-
-What This Gives You
-
-By maintaining this playbook, Likeslocale now has:
-
-A standard SaaS architecture framework
-
-Reusable across:
-
-job platforms
-
-vendor systems
-
-marketplaces
-
-operational portals
-
-knowledge platforms
-
-AI-assisted systems
+*Likeslocale SaaS Architecture Playbook v2*
+*Updated from live production build: Kairox Exchange / TalentBridge ATS*

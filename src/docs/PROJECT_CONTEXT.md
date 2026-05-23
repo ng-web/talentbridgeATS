@@ -1,620 +1,372 @@
-Kairox Exchange Platform
-Overview
+# Kairox Exchange Platform — Project Context
+**Last updated: May 2026 — Post-pilot MVP complete**
 
-Kairox Exchange is a role-based opportunity platform connecting job seekers, employers, and administrators through a structured workflow for work, study, and travel opportunities.
+---
 
-The system supports:
+## Overview
 
-opportunity publishing
+Kairox Exchange is a role-based opportunity placement platform connecting job seekers, employers, and administrators through a structured workflow for work, study, and travel opportunities.
 
-applicant management
+The system is built and maintained by Likeslocale as both a client solution and a reusable ATS/marketplace framework.
 
-entitlement-based access
+Core capabilities:
+- Opportunity publishing with admin review and approval
+- Applicant management and pipeline tracking
+- Entitlement-based access gating (employer posting, seeker browsing)
+- Payment integration via WiPay Hosted Checkout
+- Administrative moderation and reference data management
+- Role-based dashboards and portal UX
+- In-app notification system
 
-payment integration
+---
 
-administrative moderation
+## Technology Stack
 
-role-based dashboards
+| Layer | Technology |
+|-------|-----------|
+| Backend | Laravel 11, PHP 8.4+ |
+| Database | MySQL |
+| Frontend | TailwindCSS, Alpine.js, Heroicons |
+| Auth | Laravel Auth + Spatie Laravel Permission |
+| Payment | WiPay Hosted Checkout |
+| Email | Laravel Mail |
+| Infrastructure | Docker, Nginx, PHP-FPM |
+| Dev tunneling | ngrok (for payment callbacks during development) |
 
-The platform is designed as a pilot-ready MVP with architecture that supports future expansion into a scalable SaaS platform.
+---
 
-This system is being developed by Likeslocale, a digital solutions agency focused on building reusable SaaS platforms and operational systems.
+## User Roles
 
-Technology Stack
-Backend
-
-Laravel 12
-
-PHP 8.4+
-
-MySQL
-
-Infrastructure
-
-Docker
-
-Nginx
-
-PHP-FPM
-
-Frontend
-
-TailwindCSS
-
-Alpine.js
-
-Heroicons
-
-Authentication
-
-Laravel Auth
-
-Spatie Laravel Permission (roles)
-
-Payment Gateway
-
-WiPay Hosted Checkout
-
-Email
-
-Laravel Mail
-
-Core System Architecture
-User Roles
-Admin
-
+### Admin
 Platform administrators responsible for moderation and management.
 
 Capabilities:
+- Approve, archive, or return jobs to pending review
+- Manage user accounts and provision new employer accounts
+- Record and confirm payments
+- Manually grant and revoke entitlements
+- Manage reference data (countries, locations, categories, employment types)
+- View platform-wide metrics and Action Required notifications
+- Issue temporary passwords to provisioned accounts
 
-approve opportunities
-
-manage users
-
-manage entitlements
-
-manage payments
-
-view platform metrics
-
-moderate applications
-
-Employer
-
+### Employer
 Organizations posting opportunities and managing applicants.
 
 Capabilities:
+- Create and edit job listings (submitted for admin review)
+- Manage company profile and logo
+- Review applicants across all their listings
+- Update application statuses (reviewed → shortlisted → rejected)
 
-create opportunities
+Access gated by: `employer_posting_access` entitlement
 
-edit opportunities
-
-review applicants
-
-update applicant status
-
-manage company profile
-
-Job Seeker
-
+### Job Seeker
 Applicants seeking opportunities.
 
 Capabilities:
+- Create and update profile
+- Upload default resume
+- Browse approved published job listings
+- Apply for jobs (with resume and optional cover letter)
+- Track and withdraw applications
 
-create profile
+Access gated by: `job_seeker_access` entitlement
 
-browse opportunities
+---
 
-apply for opportunities
+## Core Domain Models
 
-track application status
-
-Core Domain Models
-User
-
-Represents authenticated users.
+### User
+Represents all authenticated platform users.
 
 Relationships:
+- `hasOne Employer`
+- `hasOne JobSeeker`
+- `hasMany Entitlements`
+- `hasMany Payments`
+- `hasMany Notifications`
 
-hasOne Employer
-
-hasOne JobSeeker
-
-hasMany Entitlements
-
-hasMany Payments
-
-Employer
-
+### Employer
 Represents companies or organizations posting opportunities.
 
 Relationships:
+- `belongsTo User`
+- `hasMany Jobs`
 
-belongsTo User
+Attributes include: `company_name`, `logo_path`, `description`, `website`
 
-hasMany Jobs
-
-JobSeeker
-
+### JobSeeker
 Represents applicants.
 
 Relationships:
+- `belongsTo User`
+- `hasMany Applications`
 
-belongsTo User
+Attributes include: `first_name`, `last_name`, `location`, `bio`, `default_resume_path`
 
-hasMany Applications
-
-Job
-
+### Job
 Represents opportunities on the platform.
 
-Attributes:
-
-employer_id
-
-program_id
-
-title
-
-slug
-
-description
-
-listing_type
-
-category
-
-employment_type
-
-location
-
-country
-
-status
-
-is_approved
-
-remote_flag
+Key attributes:
+- `employer_id`, `program_id`
+- `title`, `slug`, `description`
+- `listing_type` — from `Job::LISTING_TYPES` constant
+- `category` — from `job_categories` table
+- `employment_type` — from `employment_types` table
+- `country` — from `countries` table
+- `location` — from `locations` table (scoped to country)
+- `status` — from `Job::STATUSES` constant
+- `is_approved` (boolean)
+- `remote_flag` (boolean)
+- `salary_min`, `salary_max`, `fees`
+- `duration`, `application_deadline`, `eligibility`
 
 Relationships:
+- `belongsTo Employer`
+- `belongsTo Program`
+- `hasMany Applications`
 
-belongsTo Employer
+### Application
+Represents a job seeker's submission for a specific job.
 
-belongsTo Program
-
-hasMany Applications
-
-Application
-
-Represents an application submitted by a job seeker.
-
-Attributes:
-
-job_id
-
-job_seeker_id
-
-status
-
-applied_at
-
-submitted_resume_path
-
-submitted_cover_letter_path
+Key attributes:
+- `job_id`, `job_seeker_id`
+- `status` — from `Application::STATUSES` constant
+- `applied_at`
+- `submitted_resume_path` (snapshot at time of submission)
+- `submitted_cover_letter_path` (specific to this application)
 
 Relationships:
+- `belongsTo Job`
+- `belongsTo JobSeeker`
 
-belongsTo Job
+Note: submitted documents are stored on the application record, not the profile.
+The application is the source of truth for what was actually submitted.
 
-belongsTo JobSeeker
+### Entitlement
+Controls platform feature access.
 
-Entitlement
+Key attributes:
+- `user_id`
+- `type` — `job_seeker_access` or `employer_posting_access`
+- `status` — `active`, `expired`, `revoked`
+- `starts_at` (nullable — entitlement not valid before this date)
+- `expires_at`
+- `source` — `payment`, `admin_grant`
+- `notes`
 
-Controls platform access and permissions tied to payments.
+Helper method: `isActive()` — used by middleware.
 
-Attributes:
+Middleware checks ALL of: `type`, `status`, `expires_at >= now()`, `starts_at <= now()`.
 
-user_id
-
-type
-
-status
-
-starts_at
-
-expires_at
-
-source
-
-notes
-
-Relationships:
-
-belongsTo User
-
-Includes helper method:
-
-isActive()
-
-Used by middleware to determine access permissions.
-
-Payment
-
+### Payment
 Represents a financial transaction.
 
-Attributes:
+Key attributes:
+- `user_id`, `plan_id`
+- `gateway` (e.g. `wipay`)
+- `entitlement_type`
+- `order_id`, `external_ref`
+- `currency`, `amount`
+- `status` — `pending`, `completed`, `failed`, `review_required`
+- `raw_payload` (gateway callback snapshot)
+- `paid_at`
+- `entitlement_activated_at` — idempotency guard; prevents duplicate entitlement activation
 
-user_id
+### Country / Location / JobCategory / EmploymentType
+Admin-managed reference data tables that back all categorical dropdowns.
 
-gateway
+- `countries`: `id`, `name` (unique), `is_active`
+- `locations`: `id`, `country_id` (FK), `name`, `is_active` — unique per country
+- `job_categories`: `id`, `name` (unique), `is_active`
+- `employment_types`: `id`, `name` (unique), `is_active`
 
-entitlement_type
+These tables prevent free-text inconsistency. Validation uses `Rule::exists()` against these tables. Managed at `/admin/reference-data`.
 
-order_id
+### Program
+Represents work/travel programs that jobs may be associated with.
 
-external_ref
+---
 
-currency
+## Domain Status Systems
 
-amount
+All statuses are centralized in model constants. Never hardcode status strings anywhere.
 
-status
+### Job Status
+```
+pending_review → published → archived
+```
+Constants: `Job::STATUS_PENDING_REVIEW`, `Job::STATUS_PUBLISHED`, `Job::STATUS_ARCHIVED`
 
-raw_payload
+### Application Status
+```
+new → reviewed → shortlisted → rejected
+```
+Constants: `Application::STATUS_NEW`, etc.
 
-paid_at
+### Entitlement Status
+```
+active | expired | revoked
+```
 
-Payments activate entitlements.
+### Payment Status
+```
+pending | completed | failed | review_required
+```
 
-Program
+---
 
-Represents work/travel programs associated with jobs.
+## Core Workflows
 
-Domain Status Systems
+### Employer Job Posting Flow
+```
+Employer creates job (form with DB-driven dropdowns)
+    ↓
+Job saved as pending_review, is_approved = false
+    ↓
+Admin sees job in Action Required feed
+    ↓
+Admin approves → status = published, is_approved = true
+    ↓
+Job visible to job seekers with active access
+```
 
-Statuses are centralized in model constants to avoid duplication across controllers, views, and seeders.
+### Application Pipeline
+```
+Job Seeker applies (resume snapshot + optional cover letter)
+    ↓
+Status: new
+    ↓
+Employer reviews → reviewed
+    ↓
+Employer shortlists → shortlisted
+    ↓
+Placed or Rejected
+```
 
-Job Status
-draft
-pending_review
-published
-archived
-Application Status
-applied
-reviewing
-interview
-approved
-placed
-rejected
-Entitlement Status
-active
-inactive
-expired
-revoked
-Workflow Overview
-Employer Job Flow
-Employer creates job
-↓
-Admin reviews job
-↓
-Job published
-↓
-Job seekers apply
-↓
-Employer reviews applicants
-Application Pipeline
-Applied
-↓
-Reviewing
-↓
-Interview
-↓
-Approved
-↓
-Placed
-
-Rejected applications exit the pipeline.
-
-Payment / Access Flow
-User selects pricing
-↓
+### Payment / Access Flow
+```
+User selects pricing plan
+    ↓
+Payment record created (status: pending)
+    ↓
 Redirect to WiPay hosted checkout
-↓
-Payment processed
-↓
-Callback to platform
-↓
-Payment recorded
-↓
-Entitlement activated
-↓
-User access unlocked
-Access Control
-
-Platform access is controlled through Entitlements.
-
-Examples:
-
-job_seeker_access
-employer_posting_access
-
-Middleware checks:
-
-User -> Entitlements -> isActive()
-
-to determine access.
-
-Dashboard Architecture
-
-Dashboards use reusable UI components.
-
-Examples:
-
-Stat Cards
-
-Reusable dashboard metrics.
-
-Examples:
-
-Published Opportunities
-
-Applications Submitted
-
-Applicants Received
-
-Profile Completion
-
-Progress Cards
-
-Used for:
-
-profile completion
-
-onboarding progress
-
-Status Pills
-
-Reusable status indicators.
-
-Used for:
-
-application status
-
-job status
-
-entitlement status
-
-UI Design Principles
-
-The platform prioritizes:
-
-clarity
-
-role-based simplicity
-
-responsive design
-
-strong visual hierarchy
-
-clickable list rows
-
-clear call-to-action buttons
-
-minimal cognitive load
-
-Design elements include:
-
-consistent iconography
-
-dashboard cards
-
-progress indicators
-
-pipeline status indicators
-
-Pilot Demo Data
-
-The project includes a PilotDemoSeeder that generates:
-
-Users
-
-Admin
-
-admin@kairox.test
-password
-
-Employer with access
-
-employer.active@kairox.test
-password
-
-Employer without access
-
-employer.locked@kairox.test
-password
-
-Job seeker with access
-
-seeker.active@kairox.test
-password
-
-Job seeker without access
-
-seeker.locked@kairox.test
-password
-Seeder Purpose
-
-Seed data provides:
-
-testable dashboards
-
-jobs in multiple states
-
-applications in multiple states
-
-active and inactive entitlements
-
-realistic demo records
-
-Development Environment
-Local Environment
-Docker
-Nginx
-MySQL
-Laravel
-
-App URL
-
-http://localhost:8080
-Public Testing
-
-Public testing uses:
-
-ngrok
-
-Used for:
-
-external tester access
-
-payment gateway callbacks
-
-Payment Integration
-
-Payment gateway:
-
-WiPay Hosted Checkout
-
-Sandbox testing supported.
-
-Flow:
-
-Create payment record
-↓
-Generate hosted checkout URL
-↓
-Redirect user to WiPay
-↓
+    ↓
 User completes payment
-↓
-WiPay redirects to response URL
-↓
-Payment verified
-↓
-Entitlement activated
-Deployment Targets
+    ↓
+WiPay POSTs callback to platform
+    ↓
+Platform verifies signature
+    ↓
+Payment updated (status: completed)
+    ↓
+Entitlement activated (idempotent — checks entitlement_activated_at)
+    ↓
+Middleware grants access
+```
 
-Future hosting options under consideration:
+---
 
-Vultr
+## Reference Data (Seeded)
 
-DigitalOcean
+**Countries (4):** Jamaica, United States, Canada, United Kingdom
 
-AWS
+**Locations (46):**
+- Jamaica (14): Kingston, Montego Bay, Ocho Rios, Negril, Spanish Town, Portmore, Mandeville, May Pen, St. Ann's Bay, Falmouth, Black River, Savanna-la-Mar, Port Antonio, Linstead
+- USA (16): Orlando FL, Miami FL, Cape Cod MA, New York NY, Los Angeles CA, Chicago IL, Virginia Beach VA, Myrtle Beach SC, Ocean City MD, Williamsburg VA, Rehoboth Beach DE, Wildwood NJ, Bar Harbor ME, Aspen CO, Jackson Hole WY, Hilton Head SC
+- Canada (8): Toronto ON, Vancouver BC, Whistler BC, Banff AB, Montreal QC, Ottawa ON, Niagara Falls ON, Halifax NS
+- UK (8): London, Edinburgh, Manchester, Liverpool, Brighton, Oxford, Cambridge, Bristol
 
-Deployment expected to support:
+**Job Categories (16):** Hospitality & Hotels, Food & Beverage, Customer Service, Entertainment & Recreation, Childcare, Retail & Sales, Landscaping & Grounds, Agriculture, Amusement & Theme Parks, Administration, Transportation, Program Operations, Music & Entertainment, Sports & Fitness, Healthcare Support, Other
 
-containerized infrastructure
+**Employment Types (5):** Full Time, Part Time, Seasonal, Contract, Temporary
 
-Nginx
+---
 
-queue workers
+## Pilot Demo Accounts
 
-SSL
+| Role | Email | Password | State |
+|------|-------|----------|-------|
+| Admin | admin@kairox.test | password | Full access |
+| Employer | employer.active@kairox.test | password | Active posting access |
+| Employer | employer.locked@kairox.test | password | No posting access (locked) |
+| Job Seeker | seeker.active@kairox.test | password | Active browse access |
+| Job Seeker | seeker.locked@kairox.test | password | No access (locked) |
 
-Development Rules
-Domain logic
+---
 
-Never hardcode domain states in views.
+## Suggested Demo Flow
 
-Statuses must always come from model constants.
+1. **Admin** logs in → sees Action Required feed → approves a published job
+2. **Employer (active)** logs in → creates a new job listing → sees it as Pending Review
+3. **Admin** approves the job
+4. **Job Seeker (active)** logs in → browses jobs → applies with resume
+5. **Employer** logs in → sees new applicant → updates status to Shortlisted
+6. **Job Seeker** logs in → sees status updated in applications list
+7. **Employer (locked)** logs in → tries to create a job → sees locked upgrade screen
+8. **Admin** manually grants entitlement → employer is immediately unlocked
 
-Refactoring
+---
 
-Do not replace models without verifying existing relationships and helper methods.
+## Development Environment
 
-Merge improvements carefully.
+- Local: `http://localhost:8080`
+- Docker container: `talentbridge-portal-app-1`
+- Public testing: ngrok (required for WiPay payment callbacks)
 
-Controllers
+### Key Commands
+```bash
+# After pulling or deploying
+docker exec talentbridge-portal-app-1 php artisan migrate --force
+docker exec talentbridge-portal-app-1 php artisan db:seed --class=ReferenceDataSeeder --force
+docker exec talentbridge-portal-app-1 php artisan optimize:clear
+docker exec talentbridge-portal-app-1 php artisan view:clear
+docker exec talentbridge-portal-app-1 php artisan view:cache
+docker exec talentbridge-portal-app-1 php artisan storage:link
+```
 
-Controllers must validate against centralized constants.
+---
 
-Views
+## Key Architecture Decisions
 
-Views must not contain duplicated domain logic.
+1. **Reference data is DB-driven** — all categorical dropdowns (country, location, category, employment type) come from admin-managed tables. No free-text fields for categorical data.
 
-Seeders
+2. **Entitlements are separate from payments** — access is determined by the entitlement record, never by querying payments directly.
 
-Seeders must reference model constants.
+3. **Middleware enforces all access** — `EnsureActiveEmployerPostingAccess` and `EnsureActiveSeekerAccess` check type, status, `expires_at`, and `starts_at`. UI never makes access decisions.
 
-Pilot Readiness Criteria
+4. **Documents are scoped to workflows** — submitted resume and cover letter are stored on the Application record, not the JobSeeker profile. The application is the source of truth.
 
-The system is considered pilot-ready when:
+5. **One controller per resource per role** — `Admin\JobController`, `Employer\JobController`, `JobSeeker\JobController` are separate. No cross-role logic in a single controller.
 
-all user roles can complete workflows
+6. **Alpine.js JSON injection** — all JSON data passed to Alpine.js `x-data` is placed in a `<script>` tag, never inside a double-quoted HTML attribute.
 
-seeded data allows realistic testing
+---
 
-payment flow can be tested in sandbox
+## Future Expansion
 
-dashboards display meaningful metrics
+Planned for Phase 2 and 3:
 
-UI is responsive and branded
+- **Applicant pipeline UI** — Kanban-style view for employers
+- **Messaging system** — Employer ↔ applicant communication
+- **Reporting dashboard** — Admin analytics (applications per job, conversion rates, placement rates)
+- **Email digest notifications** — Weekly summaries for employers and seekers
+- **AI matching** — Recommend jobs to seekers based on profile, recommend candidates to employers
+- **Multi-tenant SaaS** — White-label the platform for other work/travel program operators
+- **Self-serve billing** — Stripe integration, subscription management, automatic entitlement renewal
+- **Mobile app** — React Native or Expo companion for job seekers
 
-errors are handled gracefully
+---
 
-Future Expansion
+## Using This File in Future AI Sessions
 
-Potential future enhancements include:
+Paste this file at the start of any new development session:
 
-Applicant pipeline UI
-
-Kanban-style pipeline for employers.
-
-Messaging system
-
-Employer ↔ applicant communication.
-
-Reporting
-
-Admin platform analytics.
-
-Notification system
-
-Email and in-platform alerts.
-
-AI assistance
-
-Applicant matching and recommendations.
-
-SaaS productization
-
-Convert platform to multi-tenant SaaS.
-
-Likeslocale Architectural Philosophy
-
-This platform follows the Likeslocale Modular SaaS Architecture Model, emphasizing:
-
-reusable modules
-
-centralized domain rules
-
-scalable workflows
-
-pilot-first development
-
-real-world usability
-
-Future platforms should reuse these architectural patterns whenever possible.
-
-How to Use This File in Future AI Chats
-
-When starting a new development conversation, provide this file as context:
-
-Example:
-
-Use the following project context:
-
+```
+Use the following project context for the Kairox Exchange platform:
 [paste PROJECT_CONTEXT.md]
 
-Help continue development of the Kairox Exchange platform.
+Also use the Likeslocale Master App Architecture Framework v4 for all architecture and implementation decisions.
+
+Current task: [describe what you need to build or fix]
+```

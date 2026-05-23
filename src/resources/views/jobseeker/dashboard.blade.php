@@ -77,7 +77,7 @@
                 <h3 class="text-2xl font-semibold">Quick Actions</h3>
                 <p class="mt-1 text-gray-500">Move quickly through your most important tasks.</p>
 
-                <div class="mt-6 flex flex-wrap gap-3">
+                <div class="mt-6 flex flex-wrap gap-3 justify-center sm:justify-start">
                     <x-likeslocale.button :href="route('jobseeker.profile.edit')" variant="info">
                         My Profile
                     </x-likeslocale.button>
@@ -217,7 +217,7 @@
                     </div>
                 </div>
 
-                <div class="mt-5">
+                <div class="mt-5 flex justify-center sm:justify-start">
                     @if($isActive)
                         <x-likeslocale.button :href="route('jobseeker.jobs.index')" variant="success">
                             Browse Jobs

@@ -111,7 +111,7 @@
                         <p class="mt-2 text-xs text-gray-500">
                             Applied {{ $existingApplication->applied_at?->format('M d, Y') }}
                         </p>
-                        <div class="mt-4">
+                        <div class="mt-4 flex justify-center sm:justify-start">
                             <x-likeslocale.button :href="route('jobseeker.applications.index')" variant="info">
                                 Track Application
                             </x-likeslocale.button>
@@ -119,7 +119,7 @@
 
                     @else
                         <h4 class="text-base font-semibold text-gray-900">Apply to this role</h4>
-                        <div class="mt-4">
+                        <div class="mt-4 flex justify-center sm:justify-start">
                             <x-likeslocale.button :href="route('jobseeker.jobs.apply', $job)" variant="accent">
                                 Apply Now
                             </x-likeslocale.button>
@@ -137,7 +137,7 @@
                 <p class="mt-3 text-sm text-gray-700">
                     Make sure your profile resume is up to date before applying. You’ll usually want to tailor your cover letter for each opportunity.
                 </p>
-                <div class="mt-5">
+                <div class="mt-5 flex justify-center sm:justify-start">
                     <x-likeslocale.button :href="route('jobseeker.profile.edit')" variant="accent">
                         Review Profile
                     </x-likeslocale.button>

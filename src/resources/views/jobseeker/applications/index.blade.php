@@ -33,7 +33,12 @@
 
                 <select id="status" name="status" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
                     <option value="">All statuses</option>
-                    @foreach(\App\Models\Application::STATUSES as $status)
+                    @foreach([
+                        \App\Models\Application::STATUS_APPLIED,
+                        \App\Models\Application::STATUS_REVIEWING,
+                        \App\Models\Application::STATUS_SHORTLISTED,
+                        \App\Models\Application::STATUS_PLACED,
+                    ] as $status)
                         <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>
                             {{ \App\Models\Application::labelFor($status) }}
                         </option>

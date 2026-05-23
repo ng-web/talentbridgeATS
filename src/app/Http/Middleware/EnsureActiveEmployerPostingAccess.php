@@ -23,6 +23,10 @@ final class EnsureActiveEmployerPostingAccess
             ->where('type', Entitlement::TYPE_EMPLOYER_POSTING_ACCESS)
             ->where('status', Entitlement::STATUS_ACTIVE)
             ->where(function ($query) {
+                $query->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>=', now());
             })

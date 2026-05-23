@@ -67,6 +67,9 @@ final class Job extends Model
         'remote_flag',
         'application_deadline',
         'duration',
+        'salary_min',
+        'salary_max',
+        'fees',
         'eligibility',
     ];
 
@@ -74,6 +77,9 @@ final class Job extends Model
         'is_approved' => 'boolean',
         'remote_flag' => 'boolean',
         'application_deadline' => 'date',
+        'salary_min' => 'integer',
+        'salary_max' => 'integer',
+        'fees' => 'integer',
     ];
 
     public function employer(): BelongsTo

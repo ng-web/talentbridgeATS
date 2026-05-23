@@ -25,6 +25,7 @@ final class PaymentController extends Controller
         $q = trim((string) $request->query('q', ''));
         $status = trim((string) $request->query('status', ''));
         $gateway = trim((string) $request->query('gateway', ''));
+        $unactivated = $request->boolean('unactivated');
 
         $payments = Payment::query()
             ->with(['user', 'plan'])
@@ -40,7 +41,12 @@ final class PaymentController extends Controller
                         });
                 });
             })
-            ->when($status !== '', function ($query) use ($status) {
+            ->when($unactivated, function ($query) {
+                $query
+                    ->where('status', Payment::STATUS_PAID)
+                    ->whereNull('entitlement_activated_at');
+            })
+            ->when(!$unactivated && $status !== '', function ($query) use ($status) {
                 $query->where('status', $status);
             })
             ->when($gateway !== '', function ($query) use ($gateway) {
@@ -73,6 +79,7 @@ final class PaymentController extends Controller
                 'q' => $q,
                 'status' => $status,
                 'gateway' => $gateway,
+                'unactivated' => $unactivated,
             ],
         ];
 

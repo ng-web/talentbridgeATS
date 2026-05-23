@@ -145,6 +145,9 @@
                 @endif
 
                 <form id="payment-filters-form" method="GET" action="{{ route('admin.payments.index') }}" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    @if($filters['unactivated'] ?? false)
+                        <input type="hidden" name="unactivated" value="1">
+                    @endif
                     <input
                         id="q"
                         name="q"

@@ -19,6 +19,7 @@ final class EntitlementController extends Controller
         $q = trim((string) $request->query('q', ''));
         $type = trim((string) $request->query('type', ''));
         $status = trim((string) $request->query('status', ''));
+        $expiring = $request->boolean('expiring');
 
         $entitlements = Entitlement::query()
             ->with('user')
@@ -32,7 +33,13 @@ final class EntitlementController extends Controller
             ->when($type !== '', function ($query) use ($type) {
                 $query->where('type', $type);
             })
-            ->when($status !== '', function ($query) use ($status) {
+            ->when($expiring, function ($query) {
+                $query
+                    ->where('status', Entitlement::STATUS_ACTIVE)
+                    ->whereNotNull('expires_at')
+                    ->whereBetween('expires_at', [now(), now()->addDays(7)]);
+            })
+            ->when(!$expiring && $status !== '', function ($query) use ($status) {
                 $query->where('status', $status);
             })
             ->latest()
@@ -74,6 +81,7 @@ final class EntitlementController extends Controller
                 'q' => $q,
                 'type' => $type,
                 'status' => $status,
+                'expiring' => $expiring,
             ],
         ];
 

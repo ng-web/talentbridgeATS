@@ -189,6 +189,9 @@
                 </div>
 
                 <form id="entitlement-filters-form" method="GET" action="{{ route('admin.entitlements.index') }}" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    @if($filters['expiring'] ?? false)
+                        <input type="hidden" name="expiring" value="1">
+                    @endif
                     <input
                         id="q"
                         name="q"

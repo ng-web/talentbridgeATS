@@ -167,7 +167,7 @@
                     @endif
                     @if($unactivatedPaymentsCount > 0)
                         <li>
-                            <a href="{{ route('admin.payments.index', ['status' => \App\Models\Payment::STATUS_PAID]) }}"
+                            <a href="{{ route('admin.payments.index', ['unactivated' => 1]) }}"
                                class="flex items-center justify-between gap-2 rounded-xl bg-red-100/60 px-3 py-2 text-red-900 hover:bg-red-100 transition-colors">
                                 <span>{{ $unactivatedPaymentsCount }} paid payment{{ $unactivatedPaymentsCount > 1 ? 's' : '' }} not yet activated</span>
                                 <x-heroicon-o-arrow-right class="w-4 h-4 shrink-0" />
@@ -185,7 +185,7 @@
                     @endif
                     @if($expiringEntitlementsCount > 0)
                         <li>
-                            <a href="{{ route('admin.entitlements.index', ['status' => \App\Models\Entitlement::STATUS_ACTIVE]) }}"
+                            <a href="{{ route('admin.entitlements.index', ['expiring' => 1]) }}"
                                class="flex items-center justify-between gap-2 rounded-xl bg-amber-100/60 px-3 py-2 text-amber-900 hover:bg-amber-100 transition-colors">
                                 <span>{{ $expiringEntitlementsCount }} entitlement{{ $expiringEntitlementsCount > 1 ? 's' : '' }} expiring within 7 days</span>
                                 <x-heroicon-o-arrow-right class="w-4 h-4 shrink-0" />

@@ -67,24 +67,20 @@
                                         <div class="text-sm">
                                             <span class="font-semibold text-gray-800">{{ $application->job->title }}</span>
                                             @if($application->job?->category)
-                                                <span class="text-gray-400">·</span>
+                                                <span class="mx-2 text-gray-300">|</span>
                                                 <span class="text-gray-600">{{ $application->job->category }}</span>
                                             @endif
                                         </div>
 
-                                        <div class="text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
-                                            <span>
-                                                <span class="font-medium text-gray-700">Applied:</span>
-                                                {{ $application->applied_at?->format('M d, Y') }}
-                                            </span>
-                                            <span>
-                                                <span class="font-medium text-gray-700">Resume:</span>
-                                                {{ $application->submitted_resume_path ? 'Submitted' : 'Not submitted' }}
-                                            </span>
-                                            <span>
-                                                <span class="font-medium text-gray-700">Cover Letter:</span>
-                                                {{ $application->submitted_cover_letter_path ? 'Submitted' : 'Not submitted' }}
-                                            </span>
+                                        <div class="text-sm text-gray-600">
+                                            <span class="font-medium text-gray-700">Applied:</span>
+                                            {{ $application->applied_at?->format('M d, Y') }}
+                                            <span class="mx-2 text-gray-300">|</span>
+                                            <span class="font-medium text-gray-700">Resume:</span>
+                                            {{ $application->submitted_resume_path ? 'Submitted' : 'Not submitted' }}
+                                            <span class="mx-2 text-gray-300">|</span>
+                                            <span class="font-medium text-gray-700">Cover Letter:</span>
+                                            {{ $application->submitted_cover_letter_path ? 'Submitted' : 'Not submitted' }}
                                         </div>
                                     </div>
 

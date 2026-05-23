@@ -277,7 +277,7 @@ final class PilotDemoSeeder extends Seeder
                 'job_seeker_id' => $jobSeekerNoAccess->id,
             ],
             [
-                'status' => Application::STATUS_APPROVED,
+                'status' => Application::STATUS_SHORTLISTED,
                 'applied_at' => now()->subHours(6),
                 'submitted_resume_path' => 'demo/seeker-new-resume.txt',
                 'submitted_cover_letter_path' => 'demo/seeker-new-cover-letter.txt',

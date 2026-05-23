@@ -10,7 +10,6 @@ final class Application extends Model
     public const STATUS_APPLIED = 'applied';
     public const STATUS_REVIEWING = 'reviewing';
     public const STATUS_SHORTLISTED = 'shortlisted';
-    public const STATUS_APPROVED = 'approved';
     public const STATUS_PLACED = 'placed';
     public const STATUS_NOT_SELECTED = 'not_selected';
     public const STATUS_WITHDRAWN = 'withdrawn';
@@ -19,7 +18,6 @@ final class Application extends Model
         self::STATUS_APPLIED,
         self::STATUS_REVIEWING,
         self::STATUS_SHORTLISTED,
-        self::STATUS_APPROVED,
         self::STATUS_PLACED,
         self::STATUS_NOT_SELECTED,
         self::STATUS_WITHDRAWN,
@@ -30,7 +28,6 @@ final class Application extends Model
         self::STATUS_APPLIED,
         self::STATUS_REVIEWING,
         self::STATUS_SHORTLISTED,
-        self::STATUS_APPROVED,
         self::STATUS_PLACED,
         self::STATUS_NOT_SELECTED,
     ];
@@ -39,7 +36,6 @@ final class Application extends Model
         self::STATUS_APPLIED => 'Applied',
         self::STATUS_REVIEWING => 'Reviewing',
         self::STATUS_SHORTLISTED => 'Shortlisted',
-        self::STATUS_APPROVED => 'Approved',
         self::STATUS_PLACED => 'Placed',
         self::STATUS_NOT_SELECTED => 'Not Selected',
         self::STATUS_WITHDRAWN => 'Withdrawn',
@@ -77,7 +73,7 @@ final class Application extends Model
     public static function toneFor(string $status): string
     {
         return match ($status) {
-            self::STATUS_APPROVED, self::STATUS_PLACED => 'success',
+            self::STATUS_PLACED => 'success',
             self::STATUS_REVIEWING, self::STATUS_SHORTLISTED => 'info',
             self::STATUS_NOT_SELECTED => 'danger',
             self::STATUS_WITHDRAWN => 'neutral',

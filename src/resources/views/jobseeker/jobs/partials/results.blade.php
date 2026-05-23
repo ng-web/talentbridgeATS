@@ -42,7 +42,7 @@
                                 <div class="text-sm">
                                     <span class="font-semibold text-gray-800">{{ $companyName }}</span>
                                     @if($job->category)
-                                        <span class="text-gray-400">·</span>
+                                        <span class="mx-2 text-gray-300">|</span>
                                         <span class="text-gray-600">{{ $job->category }}</span>
                                     @endif
                                 </div>
@@ -58,7 +58,7 @@
                         <div class="text-sm text-gray-500">
                             {{ $job->location ?: 'Location TBD' }}
                             @if($job->country)
-                                <span class="text-gray-400">·</span> {{ $job->country }}
+                                <span class="mx-2 text-gray-300">|</span>{{ $job->country }}
                             @endif
                             @if($job->remote_flag)
                                 <span class="text-gray-400"> (Remote)</span>

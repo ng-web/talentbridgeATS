@@ -46,10 +46,10 @@
                         <p class="mt-1 text-sm text-gray-500">
                             {{ $job->location ?: 'Location TBD' }}
                             @if($job->country)
-                                · {{ $job->country }}
+                                <span class="mx-2 text-gray-300">|</span>{{ $job->country }}
                             @endif
                             @if($job->remote_flag)
-                                · Remote
+                                <span class="mx-2 text-gray-300">|</span>Remote
                             @endif
                         </p>
                     </div>
@@ -86,7 +86,7 @@
                             <span class="font-medium text-gray-900">Deadline:</span>
                             <span class="{{ $deadlinePassed ? 'text-red-600 font-medium' : '' }}">
                                 {{ $job->application_deadline->format('M d, Y') }}
-                                @if($deadlinePassed) · Closed @endif
+                                @if($deadlinePassed)<span class="mx-2 text-gray-300">|</span>Closed @endif
                             </span>
                         </div>
                     @endif

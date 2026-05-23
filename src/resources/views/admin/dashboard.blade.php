@@ -212,7 +212,7 @@
                                     <p class="mt-1 text-sm text-gray-500">
                                         {{ $companyName }}
                                         @if($job->location)
-                                            <span class="text-gray-400">·</span> {{ $job->location }}
+                                            <span class="mx-2 text-gray-300">|</span>{{ $job->location }}
                                         @endif
                                     </p>
                                 </div>
@@ -263,7 +263,7 @@
                                     <p class="mt-1 text-sm text-gray-500">
                                         {{ $payment->order_id }}
                                         @if($payment->plan?->name)
-                                            <span class="text-gray-400">·</span> {{ $payment->plan->name }}
+                                            <span class="mx-2 text-gray-300">|</span>{{ $payment->plan->name }}
                                         @endif
                                     </p>
 
@@ -313,7 +313,7 @@
                                     </p>
                                     <p class="mt-1 text-xs font-medium text-amber-700">
                                         Expires {{ $entitlement->expires_at->format('M d, Y') }}
-                                        · {{ $entitlement->expires_at->diffForHumans() }}
+                                        <span class="mx-2 text-gray-300">|</span>{{ $entitlement->expires_at->diffForHumans() }}
                                     </p>
                                 </div>
 

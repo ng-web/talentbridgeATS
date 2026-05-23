@@ -149,7 +149,7 @@
                                         <p class="mt-0.5 text-sm text-gray-500 truncate">
                                             {{ $application->job?->title ?? 'Job removed' }}
                                             @if($application->applied_at)
-                                                <span class="text-gray-400">·</span> {{ $application->applied_at->format('M d, Y') }}
+                                                <span class="mx-2 text-gray-300">|</span>{{ $application->applied_at->format('M d, Y') }}
                                             @endif
                                         </p>
                                     </div>

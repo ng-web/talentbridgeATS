@@ -52,10 +52,9 @@
                     @if($applicationStatusCounts->isNotEmpty())
                         @php
                             $activeBreakdown = [
-                                \App\Models\Application::STATUS_APPLIED    => 'Applied',
-                                \App\Models\Application::STATUS_REVIEWING  => 'Reviewing',
+                                \App\Models\Application::STATUS_APPLIED     => 'Applied',
+                                \App\Models\Application::STATUS_REVIEWING   => 'Reviewing',
                                 \App\Models\Application::STATUS_SHORTLISTED => 'Shortlisted',
-                                \App\Models\Application::STATUS_APPROVED   => 'Approved',
                             ];
                         @endphp
                         <div class="mt-3 flex flex-wrap gap-1.5">
@@ -129,7 +128,7 @@
                                         <p class="mt-1 text-sm text-gray-500">
                                             {{ $appCompany }}
                                             @if($application->applied_at)
-                                                <span class="text-gray-400">·</span> {{ $application->applied_at->format('M d, Y') }}
+                                                <span class="mx-2 text-gray-300">|</span>{{ $application->applied_at->format('M d, Y') }}
                                             @endif
                                         </p>
                                     </div>

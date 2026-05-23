@@ -176,21 +176,57 @@
         </div>
 
         <div class="space-y-6">
-            <div class="rounded-3xl p-8 shadow border overflow-hidden" style="background:#edf2f6; border-color:#cfd8df;">
+            @php
+                $isActive = $entitlement?->isActive();
+                $cardBg = $isActive ? '#e7f7f3' : '#fef9ec';
+                $cardBorder = $isActive ? '#bfe9df' : '#fde68a';
+                $iconBg = $isActive ? 'rgba(80,183,164,0.18)' : 'rgba(245,158,11,0.15)';
+                $iconColor = $isActive ? '#0f766e' : '#b45309';
+                $labelColor = $isActive ? '#0f766e' : '#92400e';
+            @endphp
+
+            <div class="rounded-3xl p-8 shadow border overflow-hidden" style="background:{{ $cardBg }}; border-color:{{ $cardBorder }};">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
-                        <p class="text-sm font-medium" style="color:#5d7380;">Published Opportunities</p>
-                        <p class="mt-4 text-4xl font-bold leading-none" style="color:#6d8290;">{{ $availableJobsCount }}</p>
-                        <p class="mt-3 text-sm leading-6 text-gray-600">Current approved opportunities available to explore.</p>
+                        <p class="text-sm font-medium" style="color:{{ $labelColor }};">Platform Access</p>
+
+                        <div class="mt-3">
+                            @if($isActive)
+                                <x-likeslocale.status-pill tone="success">Active</x-likeslocale.status-pill>
+                            @elseif($entitlement?->status === \App\Models\Entitlement::STATUS_EXPIRED)
+                                <x-likeslocale.status-pill tone="warning">Expired</x-likeslocale.status-pill>
+                            @elseif($entitlement?->status === \App\Models\Entitlement::STATUS_REVOKED)
+                                <x-likeslocale.status-pill tone="danger">Revoked</x-likeslocale.status-pill>
+                            @else
+                                <x-likeslocale.status-pill tone="neutral">No Active Subscription</x-likeslocale.status-pill>
+                            @endif
+                        </div>
+
+                        <p class="mt-3 text-sm leading-6 text-gray-600">
+                            @if($isActive && $entitlement->expires_at)
+                                Access expires {{ $entitlement->expires_at->format('M d, Y') }}.
+                            @elseif($isActive)
+                                Your access is active with no set expiry.
+                            @else
+                                Subscribe to unlock job browsing and applications.
+                            @endif
+                        </p>
                     </div>
-                    <div class="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm" style="background:rgba(255,255,255,0.72); color:#6d8290;">
-                        <x-heroicon-o-briefcase class="w-5 h-5" />
+                    <div class="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm" style="background:{{ $iconBg }}; color:{{ $iconColor }};">
+                        <x-heroicon-o-shield-check class="w-5 h-5" />
                     </div>
                 </div>
+
                 <div class="mt-5">
-                    <x-likeslocale.button :href="route('jobseeker.jobs.index')" variant="secondary">
-                        Browse All
-                    </x-likeslocale.button>
+                    @if($isActive)
+                        <x-likeslocale.button :href="route('jobseeker.jobs.index')" variant="success">
+                            Browse Jobs
+                        </x-likeslocale.button>
+                    @else
+                        <x-likeslocale.button :href="route('pricing')" variant="warning">
+                            Activate Access
+                        </x-likeslocale.button>
+                    @endif
                 </div>
             </div>
 

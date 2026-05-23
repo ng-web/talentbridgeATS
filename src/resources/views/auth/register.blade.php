@@ -21,15 +21,7 @@
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <div>
-            <x-input-label for="role" :value="__('Account Type')" />
-            <select id="role" name="role" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm focus:border-[#6f4cb2] focus:ring-[#6f4cb2]" required>
-                <option value="">Select account type</option>
-                <option value="job_seeker" @selected(old('role') === 'job_seeker')>Job Seeker</option>
-                <option value="employer" @selected(old('role') === 'employer')>Employer</option>
-            </select>
-            <x-input-error :messages="$errors->get('role')" class="mt-2" />
-        </div>
+        <input type="hidden" name="role" value="job_seeker">
 
         <div>
             <x-input-label for="password" :value="__('Password')" />

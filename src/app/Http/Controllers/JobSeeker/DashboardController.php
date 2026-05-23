@@ -4,7 +4,7 @@ namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
-use App\Models\Job;
+use App\Models\Entitlement;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,16 +34,16 @@ final class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $availableJobsCount = Job::query()
-            ->where('is_approved', true)
-            ->where('status', Job::STATUS_PUBLISHED)
-            ->count();
+        $entitlement = Auth::user()->entitlements()
+            ->where('type', Entitlement::TYPE_JOB_SEEKER_ACCESS)
+            ->latest()
+            ->first();
 
         return view('jobseeker.dashboard', compact(
             'applicationCount',
             'applicationStatusCounts',
             'recentApplications',
-            'availableJobsCount',
+            'entitlement',
             'jobSeeker',
         ));
     }

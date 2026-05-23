@@ -151,9 +151,9 @@
                                     </div>
 
                                     <div class="rounded-3xl p-5 shadow-sm sm:col-span-2" style="background:#edf2f6;">
-                                        <p class="text-sm font-medium" style="color:#6d8290;">Managed Workflow</p>
+                                        <p class="text-sm font-medium" style="color:#6d8290;">Verified &amp; Moderated</p>
                                         <p class="mt-3 text-sm leading-6 text-gray-700">
-                                            Admin moderation, payments, entitlements, and role-based dashboards keep the platform organized and scalable.
+                                            Every listing is reviewed before going live. Subscriptions unlock full access, keeping the platform trusted and focused.
                                         </p>
                                     </div>
                                 </div>

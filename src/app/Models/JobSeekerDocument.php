@@ -35,7 +35,6 @@ final class JobSeekerDocument extends Model
     public const CATEGORIES = [
         'Identity & Verification' => [
             self::TYPE_PASSPORT,
-            self::TYPE_PROFILE_PHOTO,
             self::TYPE_DRIVERS_LICENSE,
         ],
         'Background & Compliance' => [

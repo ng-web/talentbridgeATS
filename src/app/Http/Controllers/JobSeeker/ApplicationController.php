@@ -11,6 +11,7 @@ use App\Notifications\ApplicationSubmittedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -152,16 +153,23 @@ final class ApplicationController extends Controller
         $jobSeekerUser = $application->jobSeeker?->user;
         $employerUser = $application->job?->employer?->user;
 
-        if ($employerUser) {
-            $employerUser->notify(new ApplicationSubmittedNotification($application));
-        }
+        try {
+            if ($employerUser) {
+                $employerUser->notify(new ApplicationSubmittedNotification($application));
+            }
 
-        if ($jobSeekerUser?->email) {
-            Mail::to($jobSeekerUser->email)->send(new JobSeekerApplicationSubmittedMail($application));
-        }
+            if ($jobSeekerUser?->email) {
+                Mail::to($jobSeekerUser->email)->send(new JobSeekerApplicationSubmittedMail($application));
+            }
 
-        if ($employerUser?->email) {
-            Mail::to($employerUser->email)->send(new EmployerNewApplicantMail($application));
+            if ($employerUser?->email) {
+                Mail::to($employerUser->email)->send(new EmployerNewApplicantMail($application));
+            }
+        } catch (\Throwable $e) {
+            Log::error('Application notification failed', [
+                'application_id' => $application->id,
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 }

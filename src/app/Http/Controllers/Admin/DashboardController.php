@@ -68,6 +68,11 @@ final class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $unactivatedPaymentsCount = Payment::query()
+            ->where('status', Payment::STATUS_PAID)
+            ->whereNull('entitlement_activated_at')
+            ->count();
+
         return view('admin.dashboard', [
             'pendingJobsCount' => $pendingJobsCount,
             'publishedJobsCount' => $publishedJobsCount,
@@ -81,6 +86,7 @@ final class DashboardController extends Controller
             'recentPendingJobs' => $recentPendingJobs,
             'recentReviewPayments' => $recentReviewPayments,
             'expiringEntitlements' => $expiringEntitlements,
+            'unactivatedPaymentsCount' => $unactivatedPaymentsCount,
         ]);
     }
 }

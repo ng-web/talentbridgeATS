@@ -136,7 +136,7 @@
         </div>
 
         @php
-            $hasUrgentItems = $pendingJobsCount > 0 || $reviewRequiredPaymentsCount > 0 || $expiringEntitlementsCount > 0;
+            $hasUrgentItems = $pendingJobsCount > 0 || $reviewRequiredPaymentsCount > 0 || $expiringEntitlementsCount > 0 || $unactivatedPaymentsCount > 0;
         @endphp
 
         <x-likeslocale.info-card
@@ -155,15 +155,42 @@
             </x-slot:icon>
 
             @if($hasUrgentItems)
-                <ul class="space-y-1 text-sm text-amber-800">
+                <ul class="space-y-2 text-sm">
                     @if($pendingJobsCount > 0)
-                        <li>{{ $pendingJobsCount }} job{{ $pendingJobsCount > 1 ? 's' : '' }} awaiting review</li>
+                        <li>
+                            <a href="{{ route('admin.jobs.index', ['status' => \App\Models\Job::STATUS_PENDING_REVIEW]) }}"
+                               class="flex items-center justify-between gap-2 rounded-xl bg-amber-100/60 px-3 py-2 text-amber-900 hover:bg-amber-100 transition-colors">
+                                <span>{{ $pendingJobsCount }} job{{ $pendingJobsCount > 1 ? 's' : '' }} awaiting approval</span>
+                                <x-heroicon-o-arrow-right class="w-4 h-4 shrink-0" />
+                            </a>
+                        </li>
+                    @endif
+                    @if($unactivatedPaymentsCount > 0)
+                        <li>
+                            <a href="{{ route('admin.payments.index', ['status' => \App\Models\Payment::STATUS_PAID]) }}"
+                               class="flex items-center justify-between gap-2 rounded-xl bg-red-100/60 px-3 py-2 text-red-900 hover:bg-red-100 transition-colors">
+                                <span>{{ $unactivatedPaymentsCount }} paid payment{{ $unactivatedPaymentsCount > 1 ? 's' : '' }} not yet activated</span>
+                                <x-heroicon-o-arrow-right class="w-4 h-4 shrink-0" />
+                            </a>
+                        </li>
                     @endif
                     @if($reviewRequiredPaymentsCount > 0)
-                        <li>{{ $reviewRequiredPaymentsCount }} payment{{ $reviewRequiredPaymentsCount > 1 ? 's' : '' }} need confirmation</li>
+                        <li>
+                            <a href="{{ route('admin.payments.index', ['status' => \App\Models\Payment::STATUS_REVIEW_REQUIRED]) }}"
+                               class="flex items-center justify-between gap-2 rounded-xl bg-amber-100/60 px-3 py-2 text-amber-900 hover:bg-amber-100 transition-colors">
+                                <span>{{ $reviewRequiredPaymentsCount }} payment{{ $reviewRequiredPaymentsCount > 1 ? 's' : '' }} need confirmation</span>
+                                <x-heroicon-o-arrow-right class="w-4 h-4 shrink-0" />
+                            </a>
+                        </li>
                     @endif
                     @if($expiringEntitlementsCount > 0)
-                        <li>{{ $expiringEntitlementsCount }} entitlement{{ $expiringEntitlementsCount > 1 ? 's' : '' }} expiring within 7 days</li>
+                        <li>
+                            <a href="{{ route('admin.entitlements.index', ['status' => \App\Models\Entitlement::STATUS_ACTIVE]) }}"
+                               class="flex items-center justify-between gap-2 rounded-xl bg-amber-100/60 px-3 py-2 text-amber-900 hover:bg-amber-100 transition-colors">
+                                <span>{{ $expiringEntitlementsCount }} entitlement{{ $expiringEntitlementsCount > 1 ? 's' : '' }} expiring within 7 days</span>
+                                <x-heroicon-o-arrow-right class="w-4 h-4 shrink-0" />
+                            </a>
+                        </li>
                     @endif
                 </ul>
             @else

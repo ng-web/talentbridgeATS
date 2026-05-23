@@ -79,11 +79,11 @@
                         @endphp
 
                         <x-likeslocale.operation-row>
-                            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                                     @if($job)
                                         <a href="{{ route('jobseeker.jobs.show', $job) }}" class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="text-lg font-semibold tracking-[0.02em] text-[#6f4cb2]">
+                                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                                <h3 class="text-base font-semibold tracking-[0.02em] text-[#6f4cb2]">
                                                     {{ $job->title }}
                                                 </h3>
 
@@ -92,7 +92,7 @@
                                                 </x-likeslocale.status-pill>
                                             </div>
 
-                                            <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5">
+                                            <div class="border-t border-gray-100 mt-2 pt-2 text-left space-y-1.5">
                                                 <div class="text-sm">
                                                     <span class="font-semibold text-gray-800">{{ $companyName }}</span>
                                                     @if($job?->category)
@@ -115,8 +115,8 @@
                                         </a>
                                     @else
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="text-lg font-semibold tracking-[0.02em] text-[#6f4cb2]">
+                                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                                <h3 class="text-base font-semibold tracking-[0.02em] text-[#6f4cb2]">
                                                     Job no longer available
                                                 </h3>
 
@@ -125,21 +125,21 @@
                                                 </x-likeslocale.status-pill>
                                             </div>
 
-                                            <div class="mt-2 text-sm text-gray-500">
+                                            <div class="mt-2 text-sm text-gray-500 text-left">
                                                 This application remains in your history.
                                             </div>
                                         </div>
                                     @endif
 
-                                    <div class="flex flex-col lg:flex-row lg:items-center gap-4 xl:gap-8 xl:shrink-0">
-                                        <div class="text-sm text-gray-500">
+                                    <div class="flex flex-col items-center gap-2.5 sm:flex-row sm:items-center xl:shrink-0">
+                                        <div class="text-sm text-gray-500 text-center sm:text-left">
                                             {{ $job?->location ?: 'Location TBD' }}
                                             @if($job?->country)
                                                 <span class="mx-2 text-gray-300">|</span>{{ $job->country }}
                                             @endif
                                         </div>
 
-                                        <div class="flex flex-row gap-3">
+                                        <div class="flex flex-row gap-2 justify-center sm:justify-start">
                                             @if($job)
                                                 <x-likeslocale.button :href="route('jobseeker.jobs.show', $job)" variant="info">
                                                     View Role

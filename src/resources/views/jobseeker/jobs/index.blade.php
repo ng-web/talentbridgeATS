@@ -44,14 +44,6 @@
                         @endforeach
                     </select>
 
-                    <select id="category" name="category" class="w-full sm:w-44 shrink-0 rounded-2xl border-gray-300 shadow-sm">
-                        <option value="">All Categories</option>
-                        @foreach($availableCategories as $category)
-                            <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>
-                                {{ $category }}
-                            </option>
-                        @endforeach
-                    </select>
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

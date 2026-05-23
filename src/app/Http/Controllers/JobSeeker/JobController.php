@@ -45,23 +45,11 @@ final class JobController extends Controller
             $query->where('location', 'like', '%' . trim($request->string('location')->toString()) . '%');
         }
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->string('category')->toString());
-        }
-
         if ($request->boolean('remote_only')) {
             $query->where('remote_flag', true);
         }
 
         $jobs = $query->latest()->get();
-
-        $availableCategories = (clone $baseQuery)
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category')
-            ->values();
 
         $availableLocations = (clone $baseQuery)
             ->whereNotNull('location')
@@ -75,14 +63,12 @@ final class JobController extends Controller
 
         $viewData = [
             'jobs' => $jobs,
-            'availableCategories' => $availableCategories,
             'availableLocations' => $availableLocations,
             'availableTypes' => $availableTypes,
             'filters' => [
                 'keyword' => $request->string('keyword')->toString(),
                 'listing_type' => $request->string('listing_type')->toString(),
                 'location' => $request->string('location')->toString(),
-                'category' => $request->string('category')->toString(),
                 'remote_only' => $request->boolean('remote_only'),
             ],
         ];

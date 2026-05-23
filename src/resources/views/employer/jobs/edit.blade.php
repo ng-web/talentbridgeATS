@@ -33,8 +33,10 @@
                     <div>
                         <label for="listing_type" class="block text-sm font-medium text-gray-700">Listing Type</label>
                         <select id="listing_type" name="listing_type" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm" required>
-                            <option value="job" @selected(old('listing_type', $job->listing_type) === 'job')>Job</option>
-                            <option value="work_study" @selected(old('listing_type', $job->listing_type) === 'work_study')>Work Study</option>
+                            <option value="">Select program type</option>
+                            @foreach(\App\Models\Job::LISTING_TYPE_LABELS as $value => $label)
+                                <option value="{{ $value }}" @selected(old('listing_type', $job->listing_type) === $value)>{{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
 

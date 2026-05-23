@@ -26,17 +26,29 @@ final class Job extends Model
         self::STATUS_ARCHIVED => 'Archived',
     ];
 
-    public const LISTING_TYPE_JOB = 'job';
-    public const LISTING_TYPE_WORK_STUDY = 'work_study';
+    public const LISTING_TYPE_SUMMER_WORK_TRAVEL = 'summer_work_travel';
+    public const LISTING_TYPE_INTERNSHIP_ABROAD = 'internship_abroad';
+    public const LISTING_TYPE_CULTURAL_EXCHANGE = 'cultural_exchange_volunteer';
+    public const LISTING_TYPE_AU_PAIR = 'au_pair';
+    public const LISTING_TYPE_CAMP_COUNSELOR = 'camp_counselor';
+    public const LISTING_TYPE_H2B = 'h2b';
 
     public const LISTING_TYPES = [
-        self::LISTING_TYPE_JOB,
-        self::LISTING_TYPE_WORK_STUDY,
+        self::LISTING_TYPE_SUMMER_WORK_TRAVEL,
+        self::LISTING_TYPE_INTERNSHIP_ABROAD,
+        self::LISTING_TYPE_CULTURAL_EXCHANGE,
+        self::LISTING_TYPE_AU_PAIR,
+        self::LISTING_TYPE_CAMP_COUNSELOR,
+        self::LISTING_TYPE_H2B,
     ];
 
     public const LISTING_TYPE_LABELS = [
-        self::LISTING_TYPE_JOB => 'Job',
-        self::LISTING_TYPE_WORK_STUDY => 'Work Study',
+        self::LISTING_TYPE_SUMMER_WORK_TRAVEL => 'Summer Work & Travel',
+        self::LISTING_TYPE_INTERNSHIP_ABROAD   => 'Internship Abroad',
+        self::LISTING_TYPE_CULTURAL_EXCHANGE   => 'Cultural Exchange & Volunteer',
+        self::LISTING_TYPE_AU_PAIR             => 'Au Pair',
+        self::LISTING_TYPE_CAMP_COUNSELOR      => 'Camp Counselor',
+        self::LISTING_TYPE_H2B                 => 'H-2B',
     ];
 
     protected $fillable = [

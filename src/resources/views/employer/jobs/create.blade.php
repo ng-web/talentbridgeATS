@@ -104,7 +104,7 @@
                         <select id="location" name="location" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
                             <option value="">Select location</option>
                             <template x-for="loc in filteredLocations" :key="loc.name">
-                                <option :value="loc.name" :selected="loc.name === '{{ old('location') }'" x-text="loc.name"></option>
+                                <option :value="loc.name" :selected="loc.name === '{{ old('location') }}'" x-text="loc.name"></option>
                             </template>
                         </select>
                         @error('location')

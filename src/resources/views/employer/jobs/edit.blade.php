@@ -38,10 +38,11 @@
                     @enderror
                 </div>
 
+                <script>const __jobLocations = @json($locations);</script>
                 <div
                     x-data="{
                         country: '{{ old('country', $job->country) }}',
-                        allLocations: @json($locations),
+                        allLocations: __jobLocations,
                         get filteredLocations() {
                             return this.allLocations[this.country] ?? [];
                         }
@@ -104,8 +105,8 @@
                         <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
                         <select id="location" name="location" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
                             <option value="">Select location</option>
-                            <template x-for="loc in filteredLocations" :key="loc.name">
-                                <option :value="loc.name" :selected="loc.name === '{{ old('location', $job->location) }}'" x-text="loc.name"></option>
+                            <template x-for="loc in filteredLocations" :key="loc">
+                                <option :value="loc" :selected="loc === '{{ old('location', $job->location) }}'" x-text="loc"></option>
                             </template>
                         </select>
                         @error('location')

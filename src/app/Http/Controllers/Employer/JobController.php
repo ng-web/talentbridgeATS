@@ -38,7 +38,7 @@ final class JobController extends Controller
         return view('employer.jobs.create', [
             'programs'        => Program::query()->orderBy('name')->get(),
             'countries'       => Country::where('is_active', true)->orderBy('name')->get(),
-            'locations'       => Location::where('is_active', true)->with('country')->orderBy('name')->get()->groupBy('country.name'),
+            'locations'       => Location::where('is_active', true)->with('country')->orderBy('name')->get()->groupBy('country.name')->map(fn($g) => $g->pluck('name')),
             'categories'      => JobCategory::where('is_active', true)->orderBy('name')->pluck('name'),
             'employmentTypes' => EmploymentType::where('is_active', true)->orderBy('name')->pluck('name'),
         ]);
@@ -116,7 +116,7 @@ final class JobController extends Controller
             'job'             => $job,
             'programs'        => Program::query()->orderBy('name')->get(),
             'countries'       => Country::where('is_active', true)->orderBy('name')->get(),
-            'locations'       => Location::where('is_active', true)->with('country')->orderBy('name')->get()->groupBy('country.name'),
+            'locations'       => Location::where('is_active', true)->with('country')->orderBy('name')->get()->groupBy('country.name')->map(fn($g) => $g->pluck('name')),
             'categories'      => JobCategory::where('is_active', true)->orderBy('name')->pluck('name'),
             'employmentTypes' => EmploymentType::where('is_active', true)->orderBy('name')->pluck('name'),
         ]);

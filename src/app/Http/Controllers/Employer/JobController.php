@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Employer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Country;
 use App\Models\Employer;
+use App\Models\EmploymentType;
 use App\Models\Job;
+use App\Models\JobCategory;
+use App\Models\Location;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class JobController extends Controller
@@ -30,11 +35,12 @@ final class JobController extends Controller
 
     public function create(): View
     {
-        $programs = Program::query()->orderBy('name')->get();
-
         return view('employer.jobs.create', [
-            'programs' => $programs,
-            'listingTypes' => Job::LISTING_TYPES,
+            'programs'        => Program::query()->orderBy('name')->get(),
+            'countries'       => Country::where('is_active', true)->orderBy('name')->get(),
+            'locations'       => Location::where('is_active', true)->with('country')->orderBy('name')->get()->groupBy('country.name'),
+            'categories'      => JobCategory::where('is_active', true)->orderBy('name')->pluck('name'),
+            'employmentTypes' => EmploymentType::where('is_active', true)->orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -49,10 +55,10 @@ final class JobController extends Controller
             'title'                => ['required', 'string', 'max:255'],
             'description'          => ['required', 'string'],
             'listing_type'         => ['required', 'string', 'in:' . implode(',', Job::LISTING_TYPES)],
-            'category'             => ['nullable', 'string', 'max:255'],
-            'employment_type'      => ['nullable', 'string', 'max:255'],
+            'category'             => ['nullable', Rule::exists('job_categories', 'name')->where('is_active', true)],
+            'employment_type'      => ['nullable', Rule::exists('employment_types', 'name')->where('is_active', true)],
+            'country'              => ['required', Rule::exists('countries', 'name')->where('is_active', true)],
             'location'             => ['nullable', 'string', 'max:255'],
-            'country'              => ['nullable', 'string', 'max:255'],
             'remote_flag'          => ['nullable', 'boolean'],
             'duration'             => ['nullable', 'string', 'max:255'],
             'salary_min'           => ['nullable', 'integer', 'min:0'],
@@ -61,6 +67,17 @@ final class JobController extends Controller
             'application_deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'eligibility'          => ['nullable', 'string'],
         ]);
+
+        if (!empty($validated['location'])) {
+            $countryId = Country::where('name', $validated['country'])->value('id');
+            $locationValid = Location::where('country_id', $countryId)
+                ->where('name', $validated['location'])
+                ->where('is_active', true)
+                ->exists();
+            if (!$locationValid) {
+                return back()->withErrors(['location' => 'The selected location is not valid for the chosen country.'])->withInput();
+            }
+        }
 
         Job::create([
             'employer_id'          => $employer->id,
@@ -95,12 +112,13 @@ final class JobController extends Controller
 
         abort_unless($employer && $job->employer_id === $employer->id, 403);
 
-        $programs = Program::query()->orderBy('name')->get();
-
         return view('employer.jobs.edit', [
-            'job' => $job,
-            'programs' => $programs,
-            'listingTypes' => Job::LISTING_TYPES,
+            'job'             => $job,
+            'programs'        => Program::query()->orderBy('name')->get(),
+            'countries'       => Country::where('is_active', true)->orderBy('name')->get(),
+            'locations'       => Location::where('is_active', true)->with('country')->orderBy('name')->get()->groupBy('country.name'),
+            'categories'      => JobCategory::where('is_active', true)->orderBy('name')->pluck('name'),
+            'employmentTypes' => EmploymentType::where('is_active', true)->orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -115,10 +133,10 @@ final class JobController extends Controller
             'title'                => ['required', 'string', 'max:255'],
             'description'          => ['required', 'string'],
             'listing_type'         => ['required', 'string', 'in:' . implode(',', Job::LISTING_TYPES)],
-            'category'             => ['nullable', 'string', 'max:255'],
-            'employment_type'      => ['nullable', 'string', 'max:255'],
+            'category'             => ['nullable', Rule::exists('job_categories', 'name')->where('is_active', true)],
+            'employment_type'      => ['nullable', Rule::exists('employment_types', 'name')->where('is_active', true)],
+            'country'              => ['required', Rule::exists('countries', 'name')->where('is_active', true)],
             'location'             => ['nullable', 'string', 'max:255'],
-            'country'              => ['nullable', 'string', 'max:255'],
             'remote_flag'          => ['nullable', 'boolean'],
             'duration'             => ['nullable', 'string', 'max:255'],
             'salary_min'           => ['nullable', 'integer', 'min:0'],
@@ -127,6 +145,17 @@ final class JobController extends Controller
             'application_deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'eligibility'          => ['nullable', 'string'],
         ]);
+
+        if (!empty($validated['location'])) {
+            $countryId = Country::where('name', $validated['country'])->value('id');
+            $locationValid = Location::where('country_id', $countryId)
+                ->where('name', $validated['location'])
+                ->where('is_active', true)
+                ->exists();
+            if (!$locationValid) {
+                return back()->withErrors(['location' => 'The selected location is not valid for the chosen country.'])->withInput();
+            }
+        }
 
         $job->update([
             'program_id'           => $validated['program_id'] ?? null,

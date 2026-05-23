@@ -37,7 +37,16 @@
                     @enderror
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div
+                    x-data="{
+                        country: '{{ old('country') }}',
+                        allLocations: @json($locations),
+                        get filteredLocations() {
+                            return this.allLocations[this.country] ?? [];
+                        }
+                    }"
+                    class="grid grid-cols-1 md:grid-cols-2 gap-6"
+                >
                     <div>
                         <label for="listing_type" class="block text-sm font-medium text-gray-700">Listing Type</label>
                         <select id="listing_type" name="listing_type" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm" required>
@@ -53,8 +62,12 @@
 
                     <div>
                         <label for="employment_type" class="block text-sm font-medium text-gray-700">Employment Type</label>
-                        <input id="employment_type" name="employment_type" type="text" value="{{ old('employment_type') }}"
-                            class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                        <select id="employment_type" name="employment_type" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                            <option value="">Select type</option>
+                            @foreach($employmentTypes as $type)
+                                <option value="{{ $type }}" @selected(old('employment_type') === $type)>{{ $type }}</option>
+                            @endforeach
+                        </select>
                         @error('employment_type')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -62,27 +75,39 @@
 
                     <div>
                         <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                        <input id="category" name="category" type="text" value="{{ old('category') }}"
-                            class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                        <select id="category" name="category" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                            <option value="">Select category</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat }}" @selected(old('category') === $cat)>{{ $cat }}</option>
+                            @endforeach
+                        </select>
                         @error('category')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
-                        <input id="location" name="location" type="text" value="{{ old('location') }}"
-                            class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                        @error('location')
+                        <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+                        <select id="country" name="country" x-model="country" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm" required>
+                            <option value="">Select country</option>
+                            @foreach($countries as $c)
+                                <option value="{{ $c->name }}" @selected(old('country') === $c->name)>{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('country')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
-                        <input id="country" name="country" type="text" value="{{ old('country') }}"
-                            class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
-                        @error('country')
+                        <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
+                        <select id="location" name="location" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                            <option value="">Select location</option>
+                            <template x-for="loc in filteredLocations" :key="loc.name">
+                                <option :value="loc.name" :selected="loc.name === '{{ old('location') }'" x-text="loc.name"></option>
+                            </template>
+                        </select>
+                        @error('location')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>

@@ -127,6 +127,16 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
 
         Route::post('/payments/{payment}/confirm', [PaymentReviewController::class, 'confirm'])
             ->name('payments.confirm');
+
+        Route::get('/reference-data', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'index'])->name('reference-data.index');
+        Route::post('/countries', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeCountry'])->name('countries.store');
+        Route::delete('/countries/{country}', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'destroyCountry'])->name('countries.destroy');
+        Route::post('/locations', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeLocation'])->name('locations.store');
+        Route::delete('/locations/{location}', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'destroyLocation'])->name('locations.destroy');
+        Route::post('/categories', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeCategory'])->name('categories.store');
+        Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'destroyCategory'])->name('categories.destroy');
+        Route::post('/employment-types', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeEmploymentType'])->name('employment-types.store');
+        Route::delete('/employment-types/{employmentType}', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'destroyEmploymentType'])->name('employment-types.destroy');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

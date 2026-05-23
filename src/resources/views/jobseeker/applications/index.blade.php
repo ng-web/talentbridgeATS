@@ -40,7 +40,7 @@
                     @endforeach
                 </select>
 
-                <div class="flex gap-2 shrink-0 w-full sm:w-auto">
+                <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-center sm:justify-start">
                     <x-likeslocale.button type="submit" variant="accent">
                         Apply
                     </x-likeslocale.button>

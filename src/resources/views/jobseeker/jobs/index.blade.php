@@ -64,7 +64,7 @@
                         <span>Remote positions only</span>
                     </label>
 
-                    <div class="flex gap-3 shrink-0">
+                    <div class="flex gap-3 shrink-0 justify-center sm:justify-start">
                         <x-likeslocale.button type="submit" variant="accent">
                             Search
                         </x-likeslocale.button>

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Entitlement;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 final class EntitlementController extends Controller
@@ -95,6 +97,12 @@ final class EntitlementController extends Controller
 
         $user = User::query()->findOrFail($validated['user_id']);
 
+        if ($user->hasRole('admin')) {
+            return back()
+                ->withErrors(['user_id' => 'Entitlements cannot be assigned to admin accounts.'])
+                ->withInput();
+        }
+
         $expectedType = null;
 
         if ($user->hasRole('employer')) {
@@ -135,6 +143,19 @@ final class EntitlementController extends Controller
 
     public function destroy(Entitlement $entitlement): RedirectResponse
     {
+        AuditLog::create([
+            'actor_user_id' => Auth::id(),
+            'action' => 'entitlement.deleted',
+            'entity_type' => Entitlement::class,
+            'entity_id' => $entitlement->id,
+            'meta' => [
+                'user_id' => $entitlement->user_id,
+                'type' => $entitlement->type,
+                'status' => $entitlement->status,
+                'expires_at' => $entitlement->expires_at?->toDateTimeString(),
+            ],
+        ]);
+
         $entitlement->delete();
 
         return redirect()

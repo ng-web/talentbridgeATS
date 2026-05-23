@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Entitlement;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class StoreEntitlementRequest extends FormRequest
@@ -15,8 +16,8 @@ final class StoreEntitlementRequest extends FormRequest
     {
         return [
             'user_id' => ['required', 'exists:users,id'],
-            'type' => ['required', 'in:job_seeker_access,employer_posting_access'],
-            'status' => ['required', 'in:active,inactive'],
+            'type' => ['required', 'in:' . implode(',', Entitlement::TYPES)],
+            'status' => ['required', 'in:' . implode(',', Entitlement::STATUSES)],
             'starts_at' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'source' => ['nullable', 'string', 'max:255'],

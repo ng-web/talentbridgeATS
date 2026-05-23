@@ -94,6 +94,12 @@ final class PaymentController extends Controller
 
         $plan = Plan::query()->findOrFail($validated['plan_id']);
 
+        if (!$plan->is_active) {
+            return back()
+                ->withErrors(['plan_id' => 'The selected plan is not active.'])
+                ->withInput();
+        }
+
         $payment = Payment::create([
             'user_id' => $validated['user_id'],
             'plan_id' => $plan->id,

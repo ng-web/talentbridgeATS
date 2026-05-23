@@ -66,7 +66,7 @@ final class User extends Authenticatable
             ->where('status', Entitlement::STATUS_ACTIVE)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>=', now());
             })
             ->exists();
     }

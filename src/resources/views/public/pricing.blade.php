@@ -1,117 +1,118 @@
-<x-layouts.portal :title="'Pricing'" heading="Pricing" subheading="Choose the access level that fits your role." portalRole="{{ auth()->check() && auth()->user()->hasRole('admin') ? 'admin' : (auth()->check() && auth()->user()->hasRole('employer') ? 'employer' : 'jobseeker') }}">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Job Seeker --}}
-        <div class="rounded-3xl p-8 shadow border" style="background:#efe8fb; border-color:#d8caee;">
-            <div class="flex items-center gap-3 mb-4">
-                <x-likeslocale.status-pill tone="brand">Job Seeker</x-likeslocale.status-pill>
-            </div>
+<x-layouts.portal :title="'Pricing'" heading="Programs & Pricing" subheading="Choose the programme that best fits your goals." portalRole="{{ auth()->check() && auth()->user()->hasRole('admin') ? 'admin' : (auth()->check() && auth()->user()->hasRole('employer') ? 'employer' : 'jobseeker') }}">
 
-            <h3 class="text-2xl font-semibold text-gray-900">Job Seeker Access</h3>
-            <p class="mt-2 text-gray-600">
-                Browse approved opportunities, apply to jobs, and manage your applications from your personal dashboard.
-            </p>
+    {{-- Job Seeker Programs --}}
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-1">Job Seeker Programmes</h2>
+        <p class="text-sm text-gray-500">One-time programme fee. Access is granted for 12 months from activation.</p>
+    </div>
 
-            <div class="mt-6">
-                @if($seekerPlan)
-                    <p class="text-4xl font-bold text-[#6f4cb2]">
-                        {{ $seekerPlan->currency }} {{ number_format((float) $seekerPlan->amount, 2) }}
-                    </p>
-                    <p class="mt-1 text-sm text-gray-500">Per month &middot; {{ $seekerPlan->duration_days }}-day access period</p>
-                @else
-                    <p class="text-xl font-semibold text-[#6f4cb2]">Contact us for pricing</p>
-                @endif
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+        @foreach($seekerPlans as $plan)
+            @php
+                $meta     = is_array($plan->meta) ? $plan->meta : [];
+                $features = $meta['features'] ?? [];
+                $desc     = $meta['description'] ?? '';
+                $isPremium = ($meta['package'] ?? '') === 'premium';
+            @endphp
 
-            <ul class="mt-6 space-y-2.5 text-sm text-gray-700">
-                @foreach([
-                    'Browse all published job and work-study opportunities',
-                    'Apply directly to listings with your profile documents',
-                    'Track application status across all submissions',
-                    'Manage your profile, resume, and compliance documents',
-                ] as $feature)
-                    <li class="flex items-start gap-2">
-                        <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#6f4cb2]" />
-                        {{ $feature }}
-                    </li>
-                @endforeach
-            </ul>
+            <div class="rounded-3xl p-8 shadow border flex flex-col {{ $isPremium ? 'ring-2 ring-[#6f4cb2]' : '' }}"
+                 style="background:#efe8fb; border-color:#d8caee;">
 
-            <div class="mt-8 flex flex-wrap gap-3">
-                @auth
-                    @if($seekerPlan)
-                        <x-likeslocale.button :href="route('payments.wipay.seeker')" variant="accent">
-                            Activate Access
-                        </x-likeslocale.button>
+                <div class="flex items-center gap-3 mb-4">
+                    <x-likeslocale.status-pill tone="brand">Job Seeker</x-likeslocale.status-pill>
+                    @if($isPremium)
+                        <x-likeslocale.status-pill tone="warning">Most Popular</x-likeslocale.status-pill>
                     @endif
-                    <x-likeslocale.button :href="route('jobseeker.dashboard')" variant="slate">
-                        Dashboard
-                    </x-likeslocale.button>
-                @else
-                    <x-likeslocale.button :href="route('register')" variant="accent">
-                        Get Started
-                    </x-likeslocale.button>
-                    <x-likeslocale.button :href="route('login')" variant="slate">
-                        Sign In
-                    </x-likeslocale.button>
-                @endauth
+                </div>
+
+                <h3 class="text-xl font-semibold text-gray-900">{{ $plan->name }}</h3>
+
+                @if($desc)
+                    <p class="mt-2 text-sm text-gray-600">{{ $desc }}</p>
+                @endif
+
+                <div class="mt-5">
+                    <p class="text-4xl font-bold text-[#6f4cb2]">
+                        {{ $plan->currency }} {{ number_format((float) $plan->amount, 0) }}
+                    </p>
+                    <p class="mt-1 text-sm text-gray-500">One-time fee &middot; 12-month access</p>
+                </div>
+
+                @if(!empty($features))
+                    <ul class="mt-6 space-y-2.5 text-sm text-gray-700 flex-1">
+                        @foreach($features as $feature)
+                            <li class="flex items-start gap-2">
+                                <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#6f4cb2]" />
+                                {{ $feature }}
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <div class="mt-8 flex flex-wrap gap-3">
+                    @auth
+                        <x-likeslocale.button
+                            :href="route('payments.wipay.seeker', $plan->slug)"
+                            variant="accent">
+                            Apply Now
+                        </x-likeslocale.button>
+                    @else
+                        <x-likeslocale.button :href="route('register')" variant="accent">
+                            Get Started
+                        </x-likeslocale.button>
+                        <x-likeslocale.button :href="route('login')" variant="slate">
+                            Sign In
+                        </x-likeslocale.button>
+                    @endauth
+                </div>
             </div>
+        @endforeach
+
+        @if($seekerPlans->isEmpty())
+            <div class="md:col-span-2 xl:col-span-3 rounded-3xl p-8 shadow border" style="background:#efe8fb; border-color:#d8caee;">
+                <p class="text-xl font-semibold text-[#6f4cb2]">Contact us for programme pricing</p>
+            </div>
+        @endif
+    </div>
+
+    {{-- Employer Section --}}
+    <div class="mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-1">Sponsors & Employers</h2>
+        <p class="text-sm text-gray-500">Employer accounts are onboarded directly by the Kairox team.</p>
+    </div>
+
+    <div class="rounded-3xl p-8 shadow border max-w-2xl" style="background:#e7f7f3; border-color:#bfe9df;">
+        <div class="flex items-center gap-3 mb-4">
+            <x-likeslocale.status-pill tone="success">Employer</x-likeslocale.status-pill>
         </div>
 
-        {{-- Employer --}}
-        <div class="rounded-3xl p-8 shadow border" style="background:#e7f7f3; border-color:#bfe9df;">
-            <div class="flex items-center gap-3 mb-4">
-                <x-likeslocale.status-pill tone="success">Employer</x-likeslocale.status-pill>
-            </div>
+        <h3 class="text-2xl font-semibold text-gray-900">Employer & Sponsor Access</h3>
+        <p class="mt-3 text-gray-600 leading-relaxed">
+            Post job listings, manage your company profile, and review applicants.
+            Employer accounts are set up and managed directly by our team — no self-registration required.
+        </p>
 
-            <h3 class="text-2xl font-semibold text-gray-900">Employer Posting Access</h3>
-            <p class="mt-2 text-gray-600">
-                Post job listings, manage your company profile, and review applicants through your employer dashboard.
+        <ul class="mt-6 space-y-2.5 text-sm text-gray-700">
+            @foreach([
+                'Create and manage job and work-study listings',
+                'Upload company logo and manage your brand profile',
+                'Review applicants, view documents, and update statuses',
+                'All postings reviewed by our team before going live',
+            ] as $feature)
+                <li class="flex items-start gap-2">
+                    <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#50b7a4]" />
+                    {{ $feature }}
+                </li>
+            @endforeach
+        </ul>
+
+        <div class="mt-8">
+            <p class="text-sm text-gray-500">
+                Interested in listing opportunities on Kairox Exchange?
+                <a href="mailto:info@kairox.com" class="text-[#50b7a4] font-medium hover:underline">Contact our team</a>
+                to get set up.
             </p>
-
-            <div class="mt-6">
-                @if($employerPlan)
-                    <p class="text-4xl font-bold text-[#50b7a4]">
-                        {{ $employerPlan->currency }} {{ number_format((float) $employerPlan->amount, 2) }}
-                    </p>
-                    <p class="mt-1 text-sm text-gray-500">Per month &middot; {{ $employerPlan->duration_days }}-day access period</p>
-                @else
-                    <p class="text-xl font-semibold text-[#50b7a4]">Contact us for pricing</p>
-                @endif
-            </div>
-
-            <ul class="mt-6 space-y-2.5 text-sm text-gray-700">
-                @foreach([
-                    'Create and manage job and work-study listings',
-                    'Upload company logo and manage your brand profile',
-                    'Review applicants, view documents, and update statuses',
-                    'All postings reviewed by our moderation team before going live',
-                ] as $feature)
-                    <li class="flex items-start gap-2">
-                        <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#50b7a4]" />
-                        {{ $feature }}
-                    </li>
-                @endforeach
-            </ul>
-
-            <div class="mt-8 flex flex-wrap gap-3">
-                @auth
-                    @if($employerPlan)
-                        <x-likeslocale.button :href="route('payments.wipay.employer')" variant="accent">
-                            Activate Access
-                        </x-likeslocale.button>
-                    @endif
-                    <x-likeslocale.button :href="route('employer.dashboard')" variant="slate">
-                        Dashboard
-                    </x-likeslocale.button>
-                @else
-                    <x-likeslocale.button :href="route('register')" variant="accent">
-                        Get Started
-                    </x-likeslocale.button>
-                    <x-likeslocale.button :href="route('login')" variant="slate">
-                        Sign In
-                    </x-likeslocale.button>
-                @endauth
-            </div>
         </div>
     </div>
+
 </x-layouts.portal>

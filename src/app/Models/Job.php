@@ -71,6 +71,8 @@ final class Job extends Model
         'salary_max',
         'fees',
         'eligibility',
+        'responsibilities',
+        'benefits',
     ];
 
     protected $casts = [

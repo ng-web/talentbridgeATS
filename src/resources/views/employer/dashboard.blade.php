@@ -258,6 +258,37 @@
                 </div>
             </div>
 
+            {{-- Access Status --}}
+            <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
+                <div class="flex items-center gap-2 mb-4">
+                    <x-heroicon-o-shield-check class="w-5 h-5 text-[#50b7a4]" />
+                    <h3 class="text-base font-semibold text-gray-900">Account Access</h3>
+                </div>
+
+                @if($entitlement && $entitlement->status === \App\Models\Entitlement::STATUS_ACTIVE)
+                    <x-likeslocale.status-pill tone="success">Active</x-likeslocale.status-pill>
+                    <p class="mt-3 text-sm text-gray-600">
+                        Your employer access is active and managed by the Kairox team.
+                    </p>
+                    @if($entitlement->expires_at)
+                        <p class="mt-2 text-xs text-gray-400">
+                            Expires {{ $entitlement->expires_at->format('M d, Y') }}
+                        </p>
+                    @endif
+                @else
+                    <x-likeslocale.status-pill tone="warning">Pending</x-likeslocale.status-pill>
+                    <p class="mt-3 text-sm text-gray-600">
+                        Your access is pending activation by the Kairox team.
+                    </p>
+                    <div class="mt-4">
+                        <a href="mailto:info@kairox.com"
+                           class="text-sm font-medium text-[#50b7a4] hover:underline">
+                            Contact us to activate →
+                        </a>
+                    </div>
+                @endif
+            </div>
+
             <x-likeslocale.info-card
                 title="Recommendation"
                 bg="rgba(111,76,178,0.08)"

@@ -90,9 +90,11 @@ Every platform follows this layered architecture. Build all six layers from day 
 - Never place external API logic directly in controllers
 
 ### Layer 6 — Infrastructure Layer
-- Docker, Nginx, MySQL, Redis (optional), queue workers
+- **Local dev**: Laravel Sail (`compose.yaml`) — all services declared as containers, one-command start
+- **Required Sail services**: app (PHP 8.5), pgsql (or mysql), redis, mailpit
+- **Production**: Docker + Nginx, Vultr / DigitalOcean / AWS
 - Environment-specific configuration via `.env` only
-- Deployment targets: Vultr, DigitalOcean, AWS
+- Never install dev services (Mailpit, Redis, DB) directly on the host machine — use Sail containers
 
 ---
 
@@ -672,7 +674,45 @@ Always account for environment differences. Never hardcode environment-specific 
 | HTTPS | Enforce in production; payment gateways require it |
 | Asset builds | Run `npm run build` before deployment; commit compiled assets if needed |
 
-### Standard Docker Command Sequence (after deploy or major change)
+### Local Development — Standard Sail Setup
+
+Every new Likeslocale project must use Laravel Sail with integrated services. Never run Mailpit, Redis, or the database directly on the host machine.
+
+**Minimum `compose.yaml` services:**
+```yaml
+services:
+  laravel.test:   # PHP app container
+  pgsql:          # or mysql
+  redis:          # queue, cache, sessions
+  mailpit:        # local email testing — UI at localhost:8025
+```
+
+**Required `.env` mail config for Sail:**
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit        # container name, not localhost
+MAIL_PORT=1025
+MAIL_FROM_ADDRESS="no-reply@yourapp.test"
+MAIL_FROM_NAME="YourApp"
+```
+
+**Mailpit dashboard:** `http://localhost:8025` — all outbound mail is intercepted here during development.
+
+**Why Sail over external services:** All services start and stop together (`sail up -d`), network names are consistent across machines, no host pollution, and no "it works on my machine" mail config drift.
+
+### Standard Command Sequence (after deploy or major change)
+
+**Sail (local dev):**
+```bash
+sail artisan migrate --force
+sail artisan db:seed --class=ReferenceDataSeeder --force
+sail artisan optimize:clear
+sail artisan view:clear
+sail artisan view:cache
+sail artisan storage:link
+```
+
+**Production Docker (non-Sail):**
 ```bash
 docker exec app php artisan migrate --force
 docker exec app php artisan db:seed --class=ReferenceDataSeeder --force
@@ -721,6 +761,8 @@ These are real bugs from the Kairox Exchange build. Reference before shipping an
 | Alpine `x-for` using `loc.name` when data is a string array | No options render; silent JS error | When locations are plucked to strings, iterate with `loc` not `loc.name` |
 | `@json` on a grouped Eloquent Collection with full models | Huge payload; model attributes expose internal data to frontend | Always `->map(fn($g) => $g->pluck('name'))` before passing to Alpine |
 | `php artisan migrate` cancelled in Docker | "APPLICATION IN PRODUCTION. Command cancelled." | Always use `--force` flag in Docker environments |
+| `MAIL_HOST=localhost` in Sail project | Mail silently fails — app container cannot reach host loopback | Set `MAIL_HOST=mailpit` (the container service name), not `localhost` |
+| Mailpit running as external host process | Stops independently of the app, inconsistent ports, breaks on other machines | Declare Mailpit in `compose.yaml` as a first-class service; use `sail up` to start everything together |
 | Status enum string mismatch | Validation passes, middleware denies, or admin filter returns nothing | Always validate against `Model::STATUSES` constant, never hardcoded strings |
 
 ---

@@ -32,6 +32,11 @@ final class JobSeekerDocument extends Model
         self::TYPE_MEDICAL_RECORD  => 'Medical Record',
     ];
 
+    public const MULTI_UPLOAD_TYPES = [
+        self::TYPE_MEDICAL_RECORD,
+        self::TYPE_CERTIFICATE,
+    ];
+
     public const CATEGORIES = [
         'Identity & Verification' => [
             self::TYPE_PASSPORT,
@@ -50,6 +55,7 @@ final class JobSeekerDocument extends Model
         'job_seeker_id',
         'document_type',
         'file_path',
+        'original_name',
         'uploaded_at',
         'notes',
     ];

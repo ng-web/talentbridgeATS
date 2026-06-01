@@ -66,6 +66,8 @@ final class JobController extends Controller
             'fees'                 => ['nullable', 'integer', 'min:0'],
             'application_deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'eligibility'          => ['nullable', 'string'],
+            'responsibilities'     => ['nullable', 'string'],
+            'benefits'             => ['nullable', 'string'],
         ]);
 
         if (!empty($validated['location'])) {
@@ -85,6 +87,9 @@ final class JobController extends Controller
             'title'                => $validated['title'],
             'slug'                 => Str::slug($validated['title']) . '-' . Str::lower(Str::random(6)),
             'description'          => $validated['description'],
+            'responsibilities'     => $validated['responsibilities'] ?? null,
+            'eligibility'          => $validated['eligibility'] ?? null,
+            'benefits'             => $validated['benefits'] ?? null,
             'listing_type'         => $validated['listing_type'],
             'category'             => $validated['category'] ?? null,
             'employment_type'      => $validated['employment_type'] ?? null,
@@ -98,7 +103,6 @@ final class JobController extends Controller
             'salary_max'           => $validated['salary_max'] ?? null,
             'fees'                 => $validated['fees'] ?? null,
             'application_deadline' => $validated['application_deadline'] ?? null,
-            'eligibility'          => $validated['eligibility'] ?? null,
         ]);
 
         return redirect()
@@ -144,6 +148,8 @@ final class JobController extends Controller
             'fees'                 => ['nullable', 'integer', 'min:0'],
             'application_deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'eligibility'          => ['nullable', 'string'],
+            'responsibilities'     => ['nullable', 'string'],
+            'benefits'             => ['nullable', 'string'],
         ]);
 
         if (!empty($validated['location'])) {
@@ -161,6 +167,9 @@ final class JobController extends Controller
             'program_id'           => $validated['program_id'] ?? null,
             'title'                => $validated['title'],
             'description'          => $validated['description'],
+            'responsibilities'     => $validated['responsibilities'] ?? null,
+            'eligibility'          => $validated['eligibility'] ?? null,
+            'benefits'             => $validated['benefits'] ?? null,
             'listing_type'         => $validated['listing_type'],
             'category'             => $validated['category'] ?? null,
             'employment_type'      => $validated['employment_type'] ?? null,
@@ -172,7 +181,6 @@ final class JobController extends Controller
             'salary_max'           => $validated['salary_max'] ?? null,
             'fees'                 => $validated['fees'] ?? null,
             'application_deadline' => $validated['application_deadline'] ?? null,
-            'eligibility'          => $validated['eligibility'] ?? null,
             'status'               => Job::STATUS_PENDING_REVIEW,
             'is_approved'          => false,
         ]);

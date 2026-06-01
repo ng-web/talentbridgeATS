@@ -27,12 +27,24 @@ final class JobSeekerDocumentController extends Controller
             'file'          => JobSeekerDocument::validationRulesFor($type),
         ]);
 
-        $path = $request->file('file')->store('jobseekers/documents/' . $type, 'public');
+        $file         = $request->file('file');
+        $path         = $file->store('jobseekers/documents/' . $type, 'public');
+        $originalName = $file->getClientOriginalName();
 
-        JobSeekerDocument::updateOrCreate(
-            ['job_seeker_id' => $jobSeeker->id, 'document_type' => $type],
-            ['file_path' => $path, 'uploaded_at' => now()]
-        );
+        if (in_array($type, JobSeekerDocument::MULTI_UPLOAD_TYPES, true)) {
+            JobSeekerDocument::create([
+                'job_seeker_id' => $jobSeeker->id,
+                'document_type' => $type,
+                'file_path'     => $path,
+                'original_name' => $originalName,
+                'uploaded_at'   => now(),
+            ]);
+        } else {
+            JobSeekerDocument::updateOrCreate(
+                ['job_seeker_id' => $jobSeeker->id, 'document_type' => $type],
+                ['file_path' => $path, 'original_name' => $originalName, 'uploaded_at' => now()]
+            );
+        }
 
         return back()->with('success', JobSeekerDocument::labelFor($type) . ' uploaded successfully.');
     }

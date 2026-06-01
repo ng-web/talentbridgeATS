@@ -248,7 +248,9 @@
             </div>
 
             @php
-                $uploadedCount = $jobSeeker->documents->whereNotIn('document_type', [\App\Models\JobSeekerDocument::TYPE_PROFILE_PHOTO])->count();
+                $uploadedCount = $jobSeeker->documents
+                    ->whereNotIn('document_type', [\App\Models\JobSeekerDocument::TYPE_PROFILE_PHOTO])
+                    ->pluck('document_type')->unique()->count();
                 $totalCount = count(\App\Models\JobSeekerDocument::TYPES) - 1;
             @endphp
 
@@ -257,7 +259,7 @@
             </x-likeslocale.status-pill>
         </div>
 
-        @php $docsByType = $jobSeeker->documents->keyBy('document_type'); @endphp
+        @php $docsByType = $jobSeeker->documents->groupBy('document_type'); @endphp
 
         <div class="mt-8 space-y-8">
             @foreach(\App\Models\JobSeekerDocument::CATEGORIES as $categoryLabel => $types)
@@ -267,73 +269,91 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         @foreach($types as $type)
                             @php
-                                $existing = $docsByType[$type] ?? null;
-                                $label = \App\Models\JobSeekerDocument::labelFor($type);
-                                $accept = \App\Models\JobSeekerDocument::acceptAttrFor($type);
+                                $docs      = $docsByType[$type] ?? collect();
+                                $isMulti   = in_array($type, \App\Models\JobSeekerDocument::MULTI_UPLOAD_TYPES);
+                                $hasAny    = $docs->isNotEmpty();
+                                $label     = \App\Models\JobSeekerDocument::labelFor($type);
+                                $accept    = \App\Models\JobSeekerDocument::acceptAttrFor($type);
                             @endphp
 
-                            <div class="rounded-2xl border p-5 {{ $existing ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-gray-50/60' }}">
-                                <div class="flex items-start justify-between gap-3">
+                            <div class="rounded-2xl border p-5 {{ $hasAny ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-gray-50/60' }}">
+                                <div class="flex items-start justify-between gap-3 mb-3">
                                     <p class="text-sm font-semibold text-gray-900 leading-snug">{{ $label }}</p>
 
-                                    @if($existing)
-                                        <x-likeslocale.status-pill tone="success">Uploaded</x-likeslocale.status-pill>
+                                    @if($hasAny)
+                                        <x-likeslocale.status-pill tone="success">
+                                            {{ $isMulti ? $docs->count() . ' file' . ($docs->count() > 1 ? 's' : '') : 'Uploaded' }}
+                                        </x-likeslocale.status-pill>
                                     @else
                                         <x-likeslocale.status-pill tone="neutral">Not uploaded</x-likeslocale.status-pill>
                                     @endif
                                 </div>
 
-                                @if($existing)
-                                    <div class="mt-3 flex flex-wrap items-center gap-3">
-                                        <a href="{{ asset('storage/' . $existing->file_path) }}"
-                                           target="_blank"
-                                           class="text-sm font-medium text-[#6f4cb2] hover:underline">
-                                            View document
-                                        </a>
-
-                                        <span class="text-gray-300">|</span>
-
-                                        <span class="text-xs text-gray-500">
-                                            Uploaded {{ $existing->uploaded_at?->format('M d, Y') }}
-                                        </span>
+                                {{-- Existing files --}}
+                                @if($hasAny)
+                                    <div class="space-y-2 mb-3">
+                                        @foreach($docs as $doc)
+                                            <div class="flex items-center justify-between gap-2 rounded-xl bg-white border border-green-100 px-3 py-2">
+                                                <div class="min-w-0">
+                                                    <a href="{{ asset('storage/' . $doc->file_path) }}"
+                                                       target="_blank"
+                                                       class="text-xs font-medium text-[#6f4cb2] hover:underline truncate block max-w-[140px]"
+                                                       title="{{ $doc->original_name }}">
+                                                        {{ $doc->original_name ?: 'View document' }}
+                                                    </a>
+                                                    <p class="text-xs text-gray-400">{{ $doc->uploaded_at?->format('M d, Y') }}</p>
+                                                </div>
+                                                <form method="POST"
+                                                      action="{{ route('jobseeker.documents.destroy', $doc) }}"
+                                                      onsubmit="return confirm('Remove this file?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-red-400 hover:text-red-600 shrink-0">
+                                                        <x-heroicon-o-x-mark class="w-4 h-4" />
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @endforeach
                                     </div>
-
-                                    <form method="POST"
-                                          action="{{ route('jobseeker.documents.destroy', $existing) }}"
-                                          class="mt-2"
-                                          onsubmit="return confirm('Remove this {{ $label }}?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-xs text-red-500 hover:text-red-700 hover:underline font-medium">
-                                            Remove
-                                        </button>
-                                    </form>
                                 @endif
 
-                                {{-- Single-action upload zone --}}
-                                <form x-data="{ loading: false }"
-                                      method="POST"
-                                      action="{{ route('jobseeker.documents.store') }}"
-                                      enctype="multipart/form-data"
-                                      class="mt-4">
-                                    @csrf
-                                    <input type="hidden" name="document_type" value="{{ $type }}">
-                                    <label class="block cursor-pointer" :class="loading ? 'opacity-50 pointer-events-none' : ''">
-                                        <input type="file"
-                                               name="file"
-                                               accept="{{ $accept }}"
-                                               class="sr-only"
-                                               @change="loading = true; $el.closest('form').submit()">
-                                        <div class="flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed {{ $existing ? 'border-green-200 hover:border-green-400' : 'border-gray-200 hover:border-[#6f4cb2]/40 hover:bg-violet-50/30' }} bg-white/60 transition-all p-2.5 text-xs text-gray-500">
-                                            <x-heroicon-o-arrow-up-tray class="w-3.5 h-3.5 shrink-0" />
-                                            <span x-show="!loading">{{ $existing ? 'Replace' : 'Upload' }}</span>
-                                            <span x-show="loading" x-cloak>Uploading…</span>
-                                        </div>
-                                    </label>
-                                    @error('file')
-                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </form>
+                                {{-- Upload button: always shown for multi, or when empty for single --}}
+                                @if($isMulti || !$hasAny)
+                                    <form x-data="{ loading: false }"
+                                          method="POST"
+                                          action="{{ route('jobseeker.documents.store') }}"
+                                          enctype="multipart/form-data">
+                                        @csrf
+                                        <input type="hidden" name="document_type" value="{{ $type }}">
+                                        <label class="block cursor-pointer" :class="loading ? 'opacity-50 pointer-events-none' : ''">
+                                            <input type="file" name="file" accept="{{ $accept }}" class="sr-only"
+                                                   @change="loading = true; $el.closest('form').submit()">
+                                            <div class="flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#6f4cb2]/40 hover:bg-violet-50/30 bg-white/60 transition-all p-2.5 text-xs text-gray-500">
+                                                <x-heroicon-o-arrow-up-tray class="w-3.5 h-3.5 shrink-0" />
+                                                <span x-show="!loading">{{ $isMulti && $hasAny ? 'Add another' : 'Upload' }}</span>
+                                                <span x-show="loading" x-cloak>Uploading…</span>
+                                            </div>
+                                        </label>
+                                    </form>
+                                @else
+                                    {{-- Single-upload replace --}}
+                                    <form x-data="{ loading: false }"
+                                          method="POST"
+                                          action="{{ route('jobseeker.documents.store') }}"
+                                          enctype="multipart/form-data">
+                                        @csrf
+                                        <input type="hidden" name="document_type" value="{{ $type }}">
+                                        <label class="block cursor-pointer" :class="loading ? 'opacity-50 pointer-events-none' : ''">
+                                            <input type="file" name="file" accept="{{ $accept }}" class="sr-only"
+                                                   @change="loading = true; $el.closest('form').submit()">
+                                            <div class="flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-green-200 hover:border-green-400 bg-white/60 transition-all p-2.5 text-xs text-gray-500">
+                                                <x-heroicon-o-arrow-up-tray class="w-3.5 h-3.5 shrink-0" />
+                                                <span x-show="!loading">Replace</span>
+                                                <span x-show="loading" x-cloak>Uploading…</span>
+                                            </div>
+                                        </label>
+                                    </form>
+                                @endif
                             </div>
                         @endforeach
                     </div>

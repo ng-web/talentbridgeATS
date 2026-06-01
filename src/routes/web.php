@@ -144,11 +144,8 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::prefix('payments')->name('payments.')->group(function () {
-        Route::get('/wipay/seeker', [\App\Http\Controllers\Payment\CheckoutController::class, 'seeker'])
+        Route::get('/wipay/seeker/{plan:slug}', [\App\Http\Controllers\Payment\CheckoutController::class, 'seeker'])
             ->name('wipay.seeker');
-
-        Route::get('/wipay/employer', [\App\Http\Controllers\Payment\CheckoutController::class, 'employer'])
-            ->name('wipay.employer');
 
         Route::match(['get', 'post'], '/wipay/callback', [\App\Http\Controllers\Payment\CheckoutController::class, 'callback'])
             ->name('wipay.callback');

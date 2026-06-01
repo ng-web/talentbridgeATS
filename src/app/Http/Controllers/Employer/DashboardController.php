@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employer;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Employer;
+use App\Models\Entitlement;
 use App\Models\Job;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -51,6 +52,12 @@ final class DashboardController extends Controller
 
         $companyCompletion = $this->calculateCompanyCompletion($employer);
 
+        $entitlement = Entitlement::query()
+            ->where('user_id', $user->id)
+            ->where('type', Entitlement::TYPE_EMPLOYER_POSTING_ACCESS)
+            ->latest()
+            ->first();
+
         return view('employer.dashboard', compact(
             'employer',
             'jobCount',
@@ -59,6 +66,7 @@ final class DashboardController extends Controller
             'applicantStatusCounts',
             'recentApplicants',
             'companyCompletion',
+            'entitlement',
         ));
     }
 

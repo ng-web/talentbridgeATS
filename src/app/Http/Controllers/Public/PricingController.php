@@ -11,9 +11,11 @@ final class PricingController extends Controller
 {
     public function __invoke(): View
     {
-        $seekerPlan    = Plan::where('entitlement_type', Entitlement::TYPE_JOB_SEEKER_ACCESS)->where('is_active', true)->first();
-        $employerPlan  = Plan::where('entitlement_type', Entitlement::TYPE_EMPLOYER_POSTING_ACCESS)->where('is_active', true)->first();
+        $seekerPlans = Plan::where('entitlement_type', Entitlement::TYPE_JOB_SEEKER_ACCESS)
+            ->where('is_active', true)
+            ->orderBy('amount')
+            ->get();
 
-        return view('public.pricing', compact('seekerPlan', 'employerPlan'));
+        return view('public.pricing', compact('seekerPlans'));
     }
 }

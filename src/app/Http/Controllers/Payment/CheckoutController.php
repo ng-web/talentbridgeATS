@@ -6,6 +6,7 @@ use App\Actions\Payments\ActivateEntitlementFromPayment;
 use App\Http\Controllers\Controller;
 use App\Models\Entitlement;
 use App\Models\Payment;
+use App\Models\Plan;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Support\Pricing\PlanResolver;
 use Illuminate\Http\RedirectResponse;
@@ -25,14 +26,11 @@ final class CheckoutController extends Controller
     ) {
     }
 
-    public function seeker(): RedirectResponse
+    public function seeker(Plan $plan): RedirectResponse
     {
-        return $this->startCheckout(Entitlement::TYPE_JOB_SEEKER_ACCESS);
-    }
+        abort_if($plan->entitlement_type !== Entitlement::TYPE_JOB_SEEKER_ACCESS, 404);
 
-    public function employer(): RedirectResponse
-    {
-        return $this->startCheckout(Entitlement::TYPE_EMPLOYER_POSTING_ACCESS);
+        return $this->startCheckout($plan);
     }
 
     public function callback(Request $request): View
@@ -119,19 +117,17 @@ final class CheckoutController extends Controller
         ]);
     }
 
-    private function startCheckout(string $entitlementType): RedirectResponse
+    private function startCheckout(Plan $plan): RedirectResponse
     {
         $user = Auth::user();
 
         abort_unless($user, 403);
 
-        $plan = $this->plans->forEntitlement($entitlementType);
-
         $payment = Payment::create([
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'gateway' => Payment::GATEWAY_WIPAY,
-            'entitlement_type' => $entitlementType,
+            'entitlement_type' => $plan->entitlement_type,
             'order_id' => 'KX-' . Str::upper(Str::random(8)) . '-' . now()->format('YmdHis'),
             'external_ref' => null,
             'currency' => $plan->currency,

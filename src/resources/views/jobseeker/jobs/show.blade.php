@@ -55,17 +55,52 @@
                     </div>
                 </div>
 
-                <div class="space-y-3">
-                    <div class="prose max-w-none prose-p:text-gray-700">
-                        <p>{{ $job->description }}</p>
-                    </div>
+                {{-- Overview --}}
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">Overview</h3>
+                    <p class="text-gray-700 leading-7 whitespace-pre-line">{{ $job->description }}</p>
                 </div>
             </div>
 
+            @if($job->responsibilities)
+                <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
+                    <h3 class="text-xl font-semibold mb-4">Key Responsibilities</h3>
+                    <ul class="space-y-2">
+                        @foreach(array_filter(array_map('trim', explode("\n", $job->responsibilities))) as $item)
+                            <li class="flex items-start gap-2.5 text-gray-700">
+                                <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#6f4cb2]" />
+                                <span>{{ $item }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             @if($job->eligibility)
                 <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
-                    <h3 class="text-2xl font-semibold mb-4">Eligibility</h3>
-                    <p class="text-gray-700 leading-7">{{ $job->eligibility }}</p>
+                    <h3 class="text-xl font-semibold mb-4">Eligibility & Requirements</h3>
+                    <ul class="space-y-2">
+                        @foreach(array_filter(array_map('trim', explode("\n", $job->eligibility))) as $item)
+                            <li class="flex items-start gap-2.5 text-gray-700">
+                                <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#50b7a4]" />
+                                <span>{{ $item }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if($job->benefits)
+                <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
+                    <h3 class="text-xl font-semibold mb-4">Benefits & Perks</h3>
+                    <ul class="space-y-2">
+                        @foreach(array_filter(array_map('trim', explode("\n", $job->benefits))) as $item)
+                            <li class="flex items-start gap-2.5 text-gray-700">
+                                <x-heroicon-o-star class="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                                <span>{{ $item }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
         </div>

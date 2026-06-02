@@ -17,8 +17,14 @@
                                         {{ \App\Models\Entitlement::typeLabelFor($entitlement->type) }}
                                     </x-likeslocale.status-pill>
 
-                                    <x-likeslocale.status-pill :tone="\App\Models\Entitlement::toneFor($entitlement->status)">
-                                        {{ \App\Models\Entitlement::labelFor($entitlement->status) }}
+                                    @php
+                                        $isStaleExpired = $entitlement->status === \App\Models\Entitlement::STATUS_ACTIVE
+                                            && $entitlement->expires_at
+                                            && $entitlement->expires_at->isPast();
+                                    @endphp
+
+                                    <x-likeslocale.status-pill :tone="$isStaleExpired ? 'danger' : \App\Models\Entitlement::toneFor($entitlement->status)">
+                                        {{ $isStaleExpired ? 'Expired (stale)' : \App\Models\Entitlement::labelFor($entitlement->status) }}
                                     </x-likeslocale.status-pill>
                                 </div>
 
@@ -30,7 +36,10 @@
                                         {{ $entitlement->starts_at?->format('M d, Y') ?? '—' }}
                                         <span class="mx-2 text-gray-300">|</span>
                                         <span class="font-medium text-gray-900">Expires:</span>
-                                        {{ $entitlement->expires_at?->format('M d, Y') ?? 'No expiry' }}
+                                        <span class="{{ $isStaleExpired ? 'text-red-600 font-medium' : '' }}">
+                                            {{ $entitlement->expires_at?->format('M d, Y') ?? 'No expiry' }}
+                                            @if($isStaleExpired) (expired)@endif
+                                        </span>
                                     </div>
 
                                     @if($entitlement->source || $entitlement->notes)

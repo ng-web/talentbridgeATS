@@ -74,15 +74,16 @@ final class EntitlementController extends Controller
             })
             ->values();
 
+        $prefill = null;
+        if ($request->has('prefill')) {
+            $prefill = Entitlement::with('user')->find($request->query('prefill'));
+        }
+
         $data = [
             'entitlements' => $entitlements,
-            'users' => $users,
-            'filters' => [
-                'q' => $q,
-                'type' => $type,
-                'status' => $status,
-                'expiring' => $expiring,
-            ],
+            'users'        => $users,
+            'prefill'      => $prefill,
+            'filters'      => compact('q', 'type', 'status', 'expiring'),
         ];
 
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {

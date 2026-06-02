@@ -57,18 +57,11 @@
 
                             <div class="flex flex-col gap-2 xl:items-end">
                                 @if($isStaleExpired)
-                                    <form method="POST" action="{{ route('admin.entitlements.store') }}">
-                                        @csrf
-                                        <input type="hidden" name="user_id"    value="{{ $entitlement->user_id }}">
-                                        <input type="hidden" name="type"       value="{{ $entitlement->type }}">
-                                        <input type="hidden" name="status"     value="{{ \App\Models\Entitlement::STATUS_ACTIVE }}">
-                                        <input type="hidden" name="starts_at"  value="{{ now()->toDateString() }}">
-                                        <input type="hidden" name="expires_at" value="{{ now()->addYear()->toDateString() }}">
-                                        <input type="hidden" name="notes"      value="{{ $entitlement->notes }}">
-                                        <x-likeslocale.button type="submit" variant="success">
-                                            Renew 12 months
-                                        </x-likeslocale.button>
-                                    </form>
+                                    <x-likeslocale.button
+                                        :href="route('admin.entitlements.index', ['prefill' => $entitlement->id]). '#grant-form'"
+                                        variant="success">
+                                        Renew Access
+                                    </x-likeslocale.button>
                                 @endif
 
                                 <form method="POST" action="{{ route('admin.entitlements.destroy', $entitlement) }}"

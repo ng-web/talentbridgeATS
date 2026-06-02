@@ -41,13 +41,16 @@ final class ApplicationController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('jobseeker.applications.index', [
+        $data = [
             'applications' => $applications,
-            'filters' => [
-                'q' => $q,
-                'status' => $status,
-            ],
-        ]);
+            'filters'      => compact('q', 'status'),
+        ];
+
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->view('jobseeker.applications.partials.list', $data);
+        }
+
+        return view('jobseeker.applications.index', $data);
     }
 
     public function create(Job $job): View|RedirectResponse

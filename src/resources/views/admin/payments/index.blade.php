@@ -1,13 +1,24 @@
 <x-layouts.portal :title="'Payments'" heading="Payments" subheading="Record and review manual platform payments." portalRole="admin">
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-1">
-            <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
-                <h3 class="text-xl font-semibold text-gray-900">Record Payment</h3>
-                <p class="mt-1 text-sm text-gray-500">
-                    Record a manual paid transaction. The selected plan controls the amount and access that will be activated.
-                </p>
+    <div class="space-y-6" x-data="{ showForm: {{ $errors->any() || session('show_form') ? 'true' : 'false' }} }">
 
-                <form method="POST" action="{{ route('admin.payments.store') }}" class="mt-6 space-y-5">
+        {{-- Record Payment toggle --}}
+        <div class="rounded-3xl bg-white shadow border border-gray-100 overflow-hidden">
+            <button type="button"
+                    @click="showForm = !showForm"
+                    class="w-full flex items-center justify-between p-6 md:p-8 text-left hover:bg-gray-50 transition-colors">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-900">Record Manual Payment</h3>
+                    <p class="mt-1 text-sm text-gray-500">Record a cash, bank transfer, or cheque payment and activate the entitlement.</p>
+                </div>
+                <div class="shrink-0 ml-4">
+                    <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                        :class="showForm ? 'rotate-180' : ''" />
+                </div>
+            </button>
+
+            <div x-show="showForm" class="border-t border-gray-100">
+                <div class="p-6 md:p-8 pt-6">
+                <form method="POST" action="{{ route('admin.payments.store') }}" class="space-y-5">
                     @csrf
 
                     <div
@@ -125,16 +136,15 @@
                     </div>
 
                     <div>
-                        <x-likeslocale.button type="submit" variant="accent">
-                            Save Payment
-                        </x-likeslocale.button>
+                        <x-likeslocale.button type="submit" variant="accent">Save Payment</x-likeslocale.button>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
 
-        <div class="xl:col-span-2">
-            <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
+        {{-- Payment history --}}
+        <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
                 <h3 class="text-xl font-semibold text-gray-900">Payment History</h3>
                 <p class="mt-1 text-sm text-gray-500">Manual and future gateway payments will appear here.</p>
 
@@ -185,7 +195,6 @@
                     @include('admin.payments.partials.list', ['payments' => $payments])
                 </div>
             </div>
-        </div>
     </div>
 
     @push('scripts')

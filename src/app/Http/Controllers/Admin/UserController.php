@@ -80,15 +80,16 @@ final class UserController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.users.index', [
-            'users' => $users,
-            'filters' => [
-                'q' => $q,
-                'role' => $role,
-                'access' => $access,
-                'password_change' => $passwordChange,
-            ],
-        ]);
+        $data = [
+            'users'   => $users,
+            'filters' => compact('q', 'role', 'access', 'passwordChange'),
+        ];
+
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->view('admin.users.partials.list', $data);
+        }
+
+        return view('admin.users.index', $data);
     }
 
     public function show(User $user): View

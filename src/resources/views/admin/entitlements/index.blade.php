@@ -3,7 +3,7 @@
          x-data='{ "showForm": @json($errors->any() || $prefill !== null) }'>
 
         {{-- Grant / Edit Access toggle --}}
-        <div class="rounded-3xl bg-white shadow border border-gray-100 overflow-hidden">
+        <div id="grant-form" class="rounded-3xl bg-white shadow border border-gray-100 overflow-hidden">
             <button type="button"
                     @click="showForm = !showForm"
                     class="w-full flex items-center justify-between p-6 md:p-8 text-left hover:bg-gray-50 transition-colors">
@@ -68,6 +68,13 @@
                     @if(session('success'))
                         <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
                             {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if($prefill)
+                        <div class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                            <span class="font-semibold">Renewing access for {{ $prefill->user?->name }}.</span>
+                            Choose a duration and save to reinstate.
                         </div>
                     @endif
 

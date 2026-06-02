@@ -61,7 +61,7 @@
                             <div class="flex flex-col gap-2 xl:items-end">
                                 @if($isExpired)
                                     <x-likeslocale.button
-                                        :href="route('admin.entitlements.index', ['prefill' => $entitlement->id])"
+                                        :href="route('admin.entitlements.index', ['prefill' => $entitlement->id]) . '#grant-form'"
                                         variant="success">
                                         Renew Access
                                     </x-likeslocale.button>

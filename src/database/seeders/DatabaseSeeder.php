@@ -11,11 +11,19 @@ final class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Always run — required for the app to function
         $this->call([
             RolesAndPermissionsSeeder::class,
+            ReferenceDataSeeder::class,
             ProgramSeeder::class,
-            PilotDemoSeeder::class,
             PlanSeeder::class,
         ]);
+
+        // Local/staging only — never run on production
+        if (app()->environment(['local', 'staging'])) {
+            $this->call([
+                PilotDemoSeeder::class,
+            ]);
+        }
     }
 }

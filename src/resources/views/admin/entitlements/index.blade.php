@@ -130,16 +130,26 @@
 
                         {{-- Status --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <select name="status" class="block w-full rounded-2xl border-gray-300 shadow-sm">
-                                @foreach(\App\Models\Entitlement::STATUSES as $s)
-                                    <option value="{{ $s }}"
-                                        @selected(old('status', $prefill?->status ?? \App\Models\Entitlement::STATUS_ACTIVE) === $s)>
-                                        {{ \App\Models\Entitlement::labelFor($s) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            @if($prefill)
+                                {{-- Renewal always sets active -- no choice needed --}}
+                                <input type="hidden" name="status" value="{{ \App\Models\Entitlement::STATUS_ACTIVE }}">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <div class="mt-1 flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5">
+                                    <x-heroicon-o-check-circle class="w-4 h-4 text-green-600 shrink-0" />
+                                    <span class="text-sm font-medium text-green-800">Active — set on save</span>
+                                </div>
+                            @else
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select name="status" class="block w-full rounded-2xl border-gray-300 shadow-sm">
+                                    @foreach(\App\Models\Entitlement::STATUSES as $s)
+                                        <option value="{{ $s }}"
+                                            @selected(old('status', \App\Models\Entitlement::STATUS_ACTIVE) === $s)>
+                                            {{ \App\Models\Entitlement::labelFor($s) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            @endif
                         </div>
 
                         {{-- Starts At --}}

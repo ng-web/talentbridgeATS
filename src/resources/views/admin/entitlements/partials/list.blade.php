@@ -21,9 +21,12 @@
                                         $isStaleExpired = $entitlement->status === \App\Models\Entitlement::STATUS_ACTIVE
                                             && $entitlement->expires_at
                                             && $entitlement->expires_at->isPast();
+
+                                        $isExpired = $entitlement->status === \App\Models\Entitlement::STATUS_EXPIRED
+                                            || $isStaleExpired;
                                     @endphp
 
-                                    <x-likeslocale.status-pill :tone="$isStaleExpired ? 'danger' : \App\Models\Entitlement::toneFor($entitlement->status)">
+                                    <x-likeslocale.status-pill :tone="$isExpired ? 'danger' : \App\Models\Entitlement::toneFor($entitlement->status)">
                                         {{ $isStaleExpired ? 'Expired (stale)' : \App\Models\Entitlement::labelFor($entitlement->status) }}
                                     </x-likeslocale.status-pill>
                                 </div>
@@ -56,9 +59,9 @@
                             </div>
 
                             <div class="flex flex-col gap-2 xl:items-end">
-                                @if($isStaleExpired)
+                                @if($isExpired)
                                     <x-likeslocale.button
-                                        :href="route('admin.entitlements.index', ['prefill' => $entitlement->id]). '#grant-form'"
+                                        :href="route('admin.entitlements.index', ['prefill' => $entitlement->id])"
                                         variant="success">
                                         Renew Access
                                     </x-likeslocale.button>

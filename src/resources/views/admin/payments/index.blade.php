@@ -10,10 +10,11 @@
                     <h3 class="text-xl font-semibold text-gray-900">Record Manual Payment</h3>
                     <p class="mt-1 text-sm text-gray-500">Record a cash, bank transfer, or cheque payment and activate the entitlement.</p>
                 </div>
-                <div class="shrink-0 ml-4">
-                    <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                <span class="shrink-0 ml-4 inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 shadow-sm">
+                    <span x-text="showForm ? 'Collapse' : 'Expand'">Expand</span>
+                    <x-heroicon-o-chevron-down class="w-4 h-4 transition-transform duration-200"
                         x-bind:class="showForm ? 'rotate-180' : ''" />
-                </div>
+                </span>
             </button>
 
             <div x-show="showForm" class="border-t border-gray-100">

@@ -1,5 +1,5 @@
 <x-layouts.portal :title="'Payments'" heading="Payments" subheading="Record and review manual platform payments." portalRole="admin">
-    <div class="space-y-6" x-data="{ showForm: {{ $errors->any() || session('show_form') ? 'true' : 'false' }} }">
+    <div class="space-y-6" x-data='{ "showForm": @json($errors->any()) }'>
 
         {{-- Record Payment toggle --}}
         <div class="rounded-3xl bg-white shadow border border-gray-100 overflow-hidden">
@@ -12,7 +12,7 @@
                 </div>
                 <div class="shrink-0 ml-4">
                     <x-heroicon-o-chevron-down class="w-5 h-5 text-gray-400 transition-transform duration-200"
-                        :class="showForm ? 'rotate-180' : ''" />
+                        x-bind:class="showForm ? 'rotate-180' : ''" />
                 </div>
             </button>
 

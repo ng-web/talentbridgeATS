@@ -177,13 +177,18 @@
                         @endforeach
                     </select>
 
-                    <select id="gateway_filter" name="gateway" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
-                        <option value="">All gateways</option>
-                        <option value="manual" @selected(($filters['gateway'] ?? '') === 'manual')>Manual</option>
-                        <option value="wipay" @selected(($filters['gateway'] ?? '') === 'wipay')>WiPay</option>
-                        <option value="stripe" @selected(($filters['gateway'] ?? '') === 'stripe')>Stripe</option>
-                        <option value="paypal" @selected(($filters['gateway'] ?? '') === 'paypal')>PayPal</option>
-                    </select>
+                    @if($activeGateways->count() > 1)
+                        <select id="gateway_filter" name="gateway" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                            <option value="">All gateways</option>
+                            @foreach($activeGateways as $gw)
+                                <option value="{{ $gw }}" @selected(($filters['gateway'] ?? '') === $gw)>
+                                    {{ ucfirst($gw) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @else
+                        <input type="hidden" id="gateway_filter" name="gateway" value="">
+                    @endif
 
                     <a href="{{ route('admin.payments.index') }}" class="shrink-0">
                         <x-likeslocale.button type="button" variant="secondary">

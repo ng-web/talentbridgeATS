@@ -71,16 +71,18 @@ final class PaymentController extends Controller
             ->orderBy('name')
             ->get();
 
+        $activeGateways = Payment::query()
+            ->whereNotNull('gateway')
+            ->distinct()
+            ->orderBy('gateway')
+            ->pluck('gateway');
+
         $data = [
-            'payments' => $payments,
-            'users' => $users,
-            'plans' => $plans,
-            'filters' => [
-                'q' => $q,
-                'status' => $status,
-                'gateway' => $gateway,
-                'unactivated' => $unactivated,
-            ],
+            'payments'       => $payments,
+            'users'          => $users,
+            'plans'          => $plans,
+            'activeGateways' => $activeGateways,
+            'filters'        => compact('q', 'status', 'gateway', 'unactivated'),
         ];
 
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {

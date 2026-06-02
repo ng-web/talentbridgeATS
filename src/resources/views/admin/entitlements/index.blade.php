@@ -173,8 +173,8 @@
                                    class="block w-full sm:w-56 rounded-2xl border-gray-300 shadow-sm">
                         </div>
 
-                        <input type="hidden" name="expires_at" x-bind:value="expiresAt">
-                        <input type="hidden" name="duration_type" x-bind:value="durationType">
+                        <input type="hidden" name="expires_at" x-model="expiresAt">
+                        <input type="hidden" name="duration_type" x-model="durationType">
 
                         <p class="mt-2 text-xs text-gray-400"
                            x-show="expiresAt"
@@ -195,7 +195,9 @@
                     </div>
 
                     <div class="flex gap-3">
-                        <x-likeslocale.button type="submit" variant="accent">Save Entitlement</x-likeslocale.button>
+                        <x-likeslocale.button type="submit" variant="accent">
+                            {{ $prefill ? 'Renew Access' : 'Save Entitlement' }}
+                        </x-likeslocale.button>
                         <x-likeslocale.button type="button" variant="secondary" @click="showForm = false">Cancel</x-likeslocale.button>
                     </div>
                 </form>

@@ -128,6 +128,9 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         Route::post('/payments/{payment}/confirm', [PaymentReviewController::class, 'confirm'])
             ->name('payments.confirm');
 
+        Route::post('/payments/{payment}/activate', [PaymentReviewController::class, 'activate'])
+            ->name('payments.activate');
+
         Route::get('/reference-data', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'index'])->name('reference-data.index');
         Route::post('/countries', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeCountry'])->name('countries.store');
         Route::delete('/countries/{country}', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'destroyCountry'])->name('countries.destroy');

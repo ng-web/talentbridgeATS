@@ -20,6 +20,12 @@
                                     <x-likeslocale.status-pill :tone="\App\Models\Payment::toneFor($payment->status)">
                                         {{ \App\Models\Payment::labelFor($payment->status) }}
                                     </x-likeslocale.status-pill>
+
+                                    @if($payment->status === \App\Models\Payment::STATUS_PAID && $payment->entitlement_activated_at === null)
+                                        <x-likeslocale.status-pill tone="warning">Access Not Activated</x-likeslocale.status-pill>
+                                    @elseif($payment->entitlement_activated_at !== null)
+                                        <x-likeslocale.status-pill tone="success">Access Active</x-likeslocale.status-pill>
+                                    @endif
                                 </div>
 
                                 <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5 text-sm">
@@ -81,6 +87,16 @@
                                         @csrf
                                         <x-likeslocale.button type="submit" variant="success">
                                             Confirm Payment
+                                        </x-likeslocale.button>
+                                    </form>
+                                @endif
+
+                                @if($payment->status === \App\Models\Payment::STATUS_PAID && $payment->entitlement_activated_at === null)
+                                    <form method="POST" action="{{ route('admin.payments.activate', $payment) }}"
+                                        onsubmit="return confirm('Activate access for {{ addslashes($payment->user?->name ?? 'this user') }}?');">
+                                        @csrf
+                                        <x-likeslocale.button type="submit" variant="accent">
+                                            Activate Access
                                         </x-likeslocale.button>
                                     </form>
                                 @endif

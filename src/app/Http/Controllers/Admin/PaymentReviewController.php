@@ -50,4 +50,19 @@ final class PaymentReviewController extends Controller
 
         return back()->with('success', 'Payment manually confirmed and entitlement activated.');
     }
+
+    public function activate(Payment $payment): RedirectResponse
+    {
+        abort_unless($payment->status === Payment::STATUS_PAID, 422);
+
+        $this->activateEntitlement->handle($payment, 'admin_manual_activate');
+
+        Log::info('Payment entitlement manually activated', [
+            'payment_id'   => $payment->id,
+            'order_id'     => $payment->order_id,
+            'activated_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Entitlement activated for ' . ($payment->user?->name ?? 'user') . '.');
+    }
 }

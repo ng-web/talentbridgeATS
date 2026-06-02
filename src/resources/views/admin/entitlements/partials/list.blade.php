@@ -55,15 +55,31 @@
                                 </div>
                             </div>
 
-                            <form method="POST" action="{{ route('admin.entitlements.destroy', $entitlement) }}"
-                                onsubmit="return confirm('Revoke this entitlement for {{ addslashes($entitlement->user?->name ?? 'this user') }}? This will remove platform access.');">
-                                @csrf
-                                @method('DELETE')
+                            <div class="flex flex-col gap-2 xl:items-end">
+                                @if($isStaleExpired)
+                                    <form method="POST" action="{{ route('admin.entitlements.store') }}">
+                                        @csrf
+                                        <input type="hidden" name="user_id"    value="{{ $entitlement->user_id }}">
+                                        <input type="hidden" name="type"       value="{{ $entitlement->type }}">
+                                        <input type="hidden" name="status"     value="{{ \App\Models\Entitlement::STATUS_ACTIVE }}">
+                                        <input type="hidden" name="starts_at"  value="{{ now()->toDateString() }}">
+                                        <input type="hidden" name="expires_at" value="{{ now()->addYear()->toDateString() }}">
+                                        <input type="hidden" name="notes"      value="{{ $entitlement->notes }}">
+                                        <x-likeslocale.button type="submit" variant="success">
+                                            Renew 12 months
+                                        </x-likeslocale.button>
+                                    </form>
+                                @endif
 
-                                <x-likeslocale.button type="submit" variant="warning">
-                                    Revoke
-                                </x-likeslocale.button>
-                            </form>
+                                <form method="POST" action="{{ route('admin.entitlements.destroy', $entitlement) }}"
+                                    onsubmit="return confirm('Revoke this entitlement for {{ addslashes($entitlement->user?->name ?? 'this user') }}?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-likeslocale.button type="submit" variant="warning">
+                                        Revoke
+                                    </x-likeslocale.button>
+                                </form>
+                            </div>
                     </div>
                 </x-likeslocale.operation-row>
             @endforeach

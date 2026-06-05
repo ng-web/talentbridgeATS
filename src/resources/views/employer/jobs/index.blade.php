@@ -62,34 +62,28 @@
                                     </div>
 
                                     <div class="border-t border-gray-100 mt-3 pt-2.5">
-                                        <div class="text-sm">
-                                            <span class="font-semibold text-gray-800">{{ $companyName }}</span>
+                                        <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                                            <span class="font-semibold text-gray-800">
+                                                <x-heroicon-o-building-office class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $companyName }}
+                                            </span>
                                             @if($job->category)
-                                                <span class="mx-2 text-gray-300">|</span>
-                                                <span class="text-gray-600">{{ $job->category }}</span>
+                                                <span><x-heroicon-o-tag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->category }}</span>
+                                            @endif
+                                            @if($job->location || $job->country)
+                                                <span><x-heroicon-o-map-pin class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->location ?: '' }}{{ $job->location && $job->country ? ', ' : '' }}{{ $job->country ?: '' }}</span>
+                                            @endif
+                                            @if($job->duration)
+                                                <span><x-heroicon-o-clock class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->duration }}</span>
                                             @endif
                                         </div>
-
-                                        <p class="mt-1.5 text-sm text-gray-500">
-                                            {{ \Illuminate\Support\Str::limit($job->description, 110) }}
-                                        </p>
                                     </div>
                                 </div>
                             </a>
 
-                            <div class="flex flex-col lg:flex-row lg:items-center gap-4 xl:gap-8 xl:shrink-0">
-                                <div class="text-sm text-gray-500">
-                                    {{ $job->location ?: 'Location TBD' }}
-                                    @if($job->country)
-                                        <span class="mx-2 text-gray-300">|</span>{{ $job->country }}
-                                    @endif
-                                </div>
-
-                                <div class="flex flex-row gap-3">
-                                    <x-likeslocale.button :href="route('employer.jobs.edit', $job)" variant="info">
-                                        Edit
-                                    </x-likeslocale.button>
-                                </div>
+                            <div class="xl:shrink-0">
+                                <x-likeslocale.button :href="route('employer.jobs.edit', $job)" variant="info">
+                                    Edit
+                                </x-likeslocale.button>
                             </div>
                         </div>
                     </x-likeslocale.operation-row>

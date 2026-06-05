@@ -28,21 +28,15 @@
                             @endif
                         </div>
 
-                        <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1">
-                            <p class="text-sm text-gray-500">
-                                <x-heroicon-o-envelope class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->email }}
-                            </p>
+                        <div class="border-t border-gray-100 mt-3 pt-2.5">
                             <div class="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                                <span class="text-gray-500"><x-heroicon-o-envelope class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->email }}</span>
                                 @if($companyName)
                                     <span><x-heroicon-o-building-office class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $companyName }}</span>
                                 @endif
-                                <span><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->created_at?->format('M d, Y') }}</span>
+                                <span class="text-gray-500"><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->created_at?->format('M d, Y') }}</span>
                                 @if($user->latestPaymentRecord())
-                                    <span>
-                                        <span class="font-medium text-gray-900">Latest Payment:</span>
-                                        {{ $user->latestPaymentRecord()->currency }}
-                                        {{ number_format((float) $user->latestPaymentRecord()->amount, 2) }}
-                                    </span>
+                                    <span><x-heroicon-o-banknotes class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->latestPaymentRecord()->currency }} {{ number_format((float) $user->latestPaymentRecord()->amount, 2) }}</span>
                                 @endif
                             </div>
                         </div>

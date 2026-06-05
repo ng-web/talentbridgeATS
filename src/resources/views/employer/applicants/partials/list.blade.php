@@ -40,7 +40,7 @@
                                 <x-likeslocale.status-pill :tone="$tone">{{ $statusLabel }}</x-likeslocale.status-pill>
                             </div>
 
-                            <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5">
+                            <div class="border-t border-gray-100 mt-3 pt-2.5">
                                 <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
                                     <span class="font-semibold text-gray-800">
                                         <x-heroicon-o-briefcase class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $application->job->title }}
@@ -49,18 +49,13 @@
                                         <span><x-heroicon-o-tag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $application->job->category }}</span>
                                     @endif
                                     @if($application->job?->listing_type)
-                                        <x-likeslocale.status-pill tone="neutral">
-                                            {{ \App\Models\Job::listingTypeLabelFor($application->job->listing_type) }}
-                                        </x-likeslocale.status-pill>
+                                        <x-likeslocale.status-pill tone="neutral">{{ \App\Models\Job::listingTypeLabelFor($application->job->listing_type) }}</x-likeslocale.status-pill>
                                     @endif
-                                </div>
-
-                                <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-500">
-                                    <span><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $application->applied_at?->format('M d, Y') }}</span>
-                                    <span class="{{ $application->submitted_resume_path ? 'text-green-600' : '' }}">
+                                    <span class="text-gray-500"><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $application->applied_at?->format('M d, Y') }}</span>
+                                    <span class="{{ $application->submitted_resume_path ? 'text-green-600' : 'text-gray-400' }}">
                                         <x-heroicon-o-document-text class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />Resume {{ $application->submitted_resume_path ? '✓' : '—' }}
                                     </span>
-                                    <span class="{{ $application->submitted_cover_letter_path ? 'text-green-600' : '' }}">
+                                    <span class="{{ $application->submitted_cover_letter_path ? 'text-green-600' : 'text-gray-400' }}">
                                         <x-heroicon-o-document-text class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />Cover Letter {{ $application->submitted_cover_letter_path ? '✓' : '—' }}
                                     </span>
                                 </div>

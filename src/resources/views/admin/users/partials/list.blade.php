@@ -29,12 +29,18 @@
                         </div>
 
                         <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1">
-                            <p class="text-sm text-gray-500">{{ $user->email }}</p>
+                            <p class="text-sm text-gray-500 flex items-center gap-1">
+                                <x-heroicon-o-envelope class="w-3.5 h-3.5 shrink-0" />{{ $user->email }}
+                            </p>
                             <div class="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
                                 @if($companyName)
-                                    <span><span class="font-medium text-gray-900">Company:</span> {{ $companyName }}</span>
+                                    <span class="flex items-center gap-1">
+                                        <x-heroicon-o-building-office class="w-3.5 h-3.5 shrink-0" />{{ $companyName }}
+                                    </span>
                                 @endif
-                                <span><span class="font-medium text-gray-900">Joined:</span> {{ $user->created_at?->format('M d, Y') }}</span>
+                                <span class="flex items-center gap-1">
+                                    <x-heroicon-o-calendar-days class="w-3.5 h-3.5 shrink-0" />{{ $user->created_at?->format('M d, Y') }}
+                                </span>
                                 @if($user->latestPaymentRecord())
                                     <span>
                                         <span class="font-medium text-gray-900">Latest Payment:</span>

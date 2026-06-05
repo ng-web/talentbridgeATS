@@ -34,26 +34,34 @@
                             </div>
 
                             <div class="border-t border-gray-100 mt-2 pt-2 text-left space-y-1.5">
-                                <div class="text-sm">
-                                    <span class="font-semibold text-gray-800">{{ $companyName }}</span>
+                                <div class="text-sm flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-600">
+                                    <span class="font-semibold text-gray-800 flex items-center gap-1">
+                                        <x-heroicon-o-building-office class="w-3.5 h-3.5 shrink-0" />{{ $companyName }}
+                                    </span>
                                     @if($job?->category)
-                                        <span class="mx-2 text-gray-300">|</span>
-                                        <span class="text-gray-600">{{ $job->category }}</span>
+                                        <span class="flex items-center gap-1">
+                                            <x-heroicon-o-tag class="w-3.5 h-3.5 shrink-0" />{{ $job->category }}
+                                        </span>
                                     @endif
                                     @if($job?->listing_type)
-                                        <span class="mx-2 text-gray-300">|</span>
-                                        <span class="text-gray-500">{{ \App\Models\Job::listingTypeLabelFor($job->listing_type) }}</span>
+                                        <span class="flex items-center gap-1">
+                                            <x-heroicon-o-briefcase class="w-3.5 h-3.5 shrink-0" />{{ \App\Models\Job::listingTypeLabelFor($job->listing_type) }}
+                                        </span>
                                     @endif
                                 </div>
-                                <div class="text-sm text-gray-600">
-                                    <span class="font-medium text-gray-700">Applied:</span>
-                                    {{ $application->applied_at?->format('M d, Y') }}
-                                    <span class="mx-2 text-gray-300">|</span>
-                                    <span class="font-medium text-gray-700">Resume:</span>
-                                    {{ $application->submitted_resume_path ? 'Submitted' : 'Not submitted' }}
-                                    <span class="mx-2 text-gray-300">|</span>
-                                    <span class="font-medium text-gray-700">Cover Letter:</span>
-                                    {{ $application->submitted_cover_letter_path ? 'Submitted' : 'Not submitted' }}
+                                <div class="text-sm flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-500">
+                                    <span class="flex items-center gap-1">
+                                        <x-heroicon-o-calendar-days class="w-3.5 h-3.5 shrink-0" />
+                                        {{ $application->applied_at?->format('M d, Y') }}
+                                    </span>
+                                    <span class="flex items-center gap-1 {{ $application->submitted_resume_path ? 'text-green-600' : '' }}">
+                                        <x-heroicon-o-document-text class="w-3.5 h-3.5 shrink-0" />
+                                        Resume {{ $application->submitted_resume_path ? '✓' : '—' }}
+                                    </span>
+                                    <span class="flex items-center gap-1 {{ $application->submitted_cover_letter_path ? 'text-green-600' : '' }}">
+                                        <x-heroicon-o-document-text class="w-3.5 h-3.5 shrink-0" />
+                                        Cover Letter {{ $application->submitted_cover_letter_path ? '✓' : '—' }}
+                                    </span>
                                 </div>
                             </div>
                         </a>

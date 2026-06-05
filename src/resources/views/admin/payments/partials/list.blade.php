@@ -31,37 +31,47 @@
                                 </div>
 
                                 <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5 text-sm">
-                                    <p class="text-gray-500">{{ $payment->user?->email }}</p>
+                                    <p class="text-gray-500 flex items-center gap-1">
+                                        <x-heroicon-o-envelope class="w-3.5 h-3.5 shrink-0" />{{ $payment->user?->email }}
+                                    </p>
 
-                                    <div class="text-gray-600">
-                                        <span class="font-medium text-gray-900">Amount:</span>
-                                        {{ $payment->currency }} {{ number_format((float) $payment->amount, 2) }}
-                                        <span class="mx-2 text-gray-300">|</span>
-                                        <span class="font-medium text-gray-900">Paid At:</span>
-                                        {{ $payment->paid_at?->format('M d, Y') ?? '—' }}
+                                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                                        <span class="flex items-center gap-1 font-semibold text-gray-900">
+                                            <x-heroicon-o-banknotes class="w-3.5 h-3.5 shrink-0" />
+                                            {{ $payment->currency }} {{ number_format((float) $payment->amount, 2) }}
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <x-heroicon-o-calendar-days class="w-3.5 h-3.5 shrink-0" />
+                                            {{ $payment->paid_at?->format('M d, Y') ?? '—' }}
+                                        </span>
+                                        @if($payment->gateway)
+                                            <span class="flex items-center gap-1">
+                                                <x-heroicon-o-credit-card class="w-3.5 h-3.5 shrink-0" />
+                                                {{ ucfirst($payment->gateway) }}
+                                            </span>
+                                        @endif
                                     </div>
 
                                     <div class="text-gray-500 space-y-1">
                                         @if($payment->plan)
-                                            <div>
-                                                <span class="font-medium text-gray-700">Plan:</span>
+                                            <div class="flex items-center gap-1">
+                                                <x-heroicon-o-rectangle-stack class="w-3.5 h-3.5 shrink-0" />
                                                 {{ $payment->plan->name }}
-                                                @if($payment->plan->slug)
-                                                    <span class="text-gray-400">({{ $payment->plan->slug }})</span>
-                                                @endif
                                             </div>
                                         @endif
 
-                                        @if($payment->gateway)
-                                            <div><span class="font-medium text-gray-700">Gateway:</span> {{ $payment->gateway }}</div>
-                                        @endif
-
                                         @if($payment->order_id)
-                                            <div><span class="font-medium text-gray-700">Order ID:</span> {{ $payment->order_id }}</div>
+                                            <div class="flex items-center gap-1">
+                                                <x-heroicon-o-hashtag class="w-3.5 h-3.5 shrink-0" />
+                                                {{ $payment->order_id }}
+                                            </div>
                                         @endif
 
                                         @if($payment->external_ref)
-                                            <div><span class="font-medium text-gray-700">External Ref:</span> {{ $payment->external_ref }}</div>
+                                            <div class="flex items-center gap-1">
+                                                <x-heroicon-o-arrow-top-right-on-square class="w-3.5 h-3.5 shrink-0" />
+                                                {{ $payment->external_ref }}
+                                            </div>
                                         @endif
 
                                         @if(data_get($payment->raw_payload, 'notes'))

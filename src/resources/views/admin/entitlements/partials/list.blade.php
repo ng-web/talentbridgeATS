@@ -32,19 +32,14 @@
                                 </div>
 
                                 <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5 text-sm">
-                                    <p class="text-gray-500 flex items-center gap-1">
-                                        <x-heroicon-o-envelope class="w-3.5 h-3.5 shrink-0" />{{ $entitlement->user?->email }}
+                                    <p class="text-sm text-gray-500">
+                                        <x-heroicon-o-envelope class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $entitlement->user?->email }}
                                     </p>
 
-                                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
-                                        <span class="flex items-center gap-1">
-                                            <x-heroicon-o-play class="w-3.5 h-3.5 shrink-0" />
-                                            {{ $entitlement->starts_at?->format('M d, Y') ?? '—' }}
-                                        </span>
-                                        <span class="flex items-center gap-1 {{ $isStaleExpired ? 'text-red-600 font-medium' : '' }}">
-                                            <x-heroicon-o-calendar-days class="w-3.5 h-3.5 shrink-0" />
-                                            {{ $entitlement->expires_at?->format('M d, Y') ?? 'No expiry' }}
-                                            @if($isStaleExpired) (expired)@endif
+                                    <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                                        <span><x-heroicon-o-play class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $entitlement->starts_at?->format('M d, Y') ?? '—' }}</span>
+                                        <span class="{{ $isStaleExpired ? 'text-red-600 font-medium' : '' }}">
+                                            <x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $entitlement->expires_at?->format('M d, Y') ?? 'No expiry' }}@if($isStaleExpired) (expired)@endif
                                         </span>
                                     </div>
 

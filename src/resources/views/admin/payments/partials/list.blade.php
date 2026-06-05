@@ -31,47 +31,29 @@
                                 </div>
 
                                 <div class="border-t border-gray-100 mt-3 pt-2.5 space-y-1.5 text-sm">
-                                    <p class="text-gray-500 flex items-center gap-1">
-                                        <x-heroicon-o-envelope class="w-3.5 h-3.5 shrink-0" />{{ $payment->user?->email }}
+                                    <p class="text-sm text-gray-500">
+                                        <x-heroicon-o-envelope class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->user?->email }}
                                     </p>
 
-                                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
-                                        <span class="flex items-center gap-1 font-semibold text-gray-900">
-                                            <x-heroicon-o-banknotes class="w-3.5 h-3.5 shrink-0" />
-                                            {{ $payment->currency }} {{ number_format((float) $payment->amount, 2) }}
+                                    <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                                        <span class="font-semibold text-gray-900">
+                                            <x-heroicon-o-banknotes class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->currency }} {{ number_format((float) $payment->amount, 2) }}
                                         </span>
-                                        <span class="flex items-center gap-1">
-                                            <x-heroicon-o-calendar-days class="w-3.5 h-3.5 shrink-0" />
-                                            {{ $payment->paid_at?->format('M d, Y') ?? '—' }}
-                                        </span>
+                                        <span><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->paid_at?->format('M d, Y') ?? '—' }}</span>
                                         @if($payment->gateway)
-                                            <span class="flex items-center gap-1">
-                                                <x-heroicon-o-credit-card class="w-3.5 h-3.5 shrink-0" />
-                                                {{ ucfirst($payment->gateway) }}
-                                            </span>
+                                            <span><x-heroicon-o-credit-card class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ ucfirst($payment->gateway) }}</span>
                                         @endif
                                     </div>
 
-                                    <div class="text-gray-500 space-y-1">
+                                    <div class="text-sm text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
                                         @if($payment->plan)
-                                            <div class="flex items-center gap-1">
-                                                <x-heroicon-o-rectangle-stack class="w-3.5 h-3.5 shrink-0" />
-                                                {{ $payment->plan->name }}
-                                            </div>
+                                            <span><x-heroicon-o-rectangle-stack class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->plan->name }}</span>
                                         @endif
-
                                         @if($payment->order_id)
-                                            <div class="flex items-center gap-1">
-                                                <x-heroicon-o-hashtag class="w-3.5 h-3.5 shrink-0" />
-                                                {{ $payment->order_id }}
-                                            </div>
+                                            <span><x-heroicon-o-hashtag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->order_id }}</span>
                                         @endif
-
                                         @if($payment->external_ref)
-                                            <div class="flex items-center gap-1">
-                                                <x-heroicon-o-arrow-top-right-on-square class="w-3.5 h-3.5 shrink-0" />
-                                                {{ $payment->external_ref }}
-                                            </div>
+                                            <span><x-heroicon-o-arrow-top-right-on-square class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->external_ref }}</span>
                                         @endif
 
                                         @if(data_get($payment->raw_payload, 'notes'))

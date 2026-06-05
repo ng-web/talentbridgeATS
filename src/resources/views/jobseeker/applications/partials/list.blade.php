@@ -34,33 +34,24 @@
                             </div>
 
                             <div class="border-t border-gray-100 mt-2 pt-2 text-left space-y-1.5">
-                                <div class="text-sm flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-600">
-                                    <span class="font-semibold text-gray-800 flex items-center gap-1">
-                                        <x-heroicon-o-building-office class="w-3.5 h-3.5 shrink-0" />{{ $companyName }}
+                                <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                                    <span class="font-semibold text-gray-800">
+                                        <x-heroicon-o-building-office class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $companyName }}
                                     </span>
                                     @if($job?->category)
-                                        <span class="flex items-center gap-1">
-                                            <x-heroicon-o-tag class="w-3.5 h-3.5 shrink-0" />{{ $job->category }}
-                                        </span>
+                                        <span><x-heroicon-o-tag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->category }}</span>
                                     @endif
                                     @if($job?->listing_type)
-                                        <span class="flex items-center gap-1">
-                                            <x-heroicon-o-briefcase class="w-3.5 h-3.5 shrink-0" />{{ \App\Models\Job::listingTypeLabelFor($job->listing_type) }}
-                                        </span>
+                                        <span><x-heroicon-o-briefcase class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ \App\Models\Job::listingTypeLabelFor($job->listing_type) }}</span>
                                     @endif
                                 </div>
-                                <div class="text-sm flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-500">
-                                    <span class="flex items-center gap-1">
-                                        <x-heroicon-o-calendar-days class="w-3.5 h-3.5 shrink-0" />
-                                        {{ $application->applied_at?->format('M d, Y') }}
+                                <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-500">
+                                    <span><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $application->applied_at?->format('M d, Y') }}</span>
+                                    <span class="{{ $application->submitted_resume_path ? 'text-green-600' : '' }}">
+                                        <x-heroicon-o-document-text class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />Resume {{ $application->submitted_resume_path ? '✓' : '—' }}
                                     </span>
-                                    <span class="flex items-center gap-1 {{ $application->submitted_resume_path ? 'text-green-600' : '' }}">
-                                        <x-heroicon-o-document-text class="w-3.5 h-3.5 shrink-0" />
-                                        Resume {{ $application->submitted_resume_path ? '✓' : '—' }}
-                                    </span>
-                                    <span class="flex items-center gap-1 {{ $application->submitted_cover_letter_path ? 'text-green-600' : '' }}">
-                                        <x-heroicon-o-document-text class="w-3.5 h-3.5 shrink-0" />
-                                        Cover Letter {{ $application->submitted_cover_letter_path ? '✓' : '—' }}
+                                    <span class="{{ $application->submitted_cover_letter_path ? 'text-green-600' : '' }}">
+                                        <x-heroicon-o-document-text class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />Cover Letter {{ $application->submitted_cover_letter_path ? '✓' : '—' }}
                                     </span>
                                 </div>
                             </div>

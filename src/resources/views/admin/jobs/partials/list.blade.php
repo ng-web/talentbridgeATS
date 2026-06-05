@@ -47,19 +47,16 @@
                                     </div>
 
                                     <div class="border-t border-gray-100 mt-3 pt-2.5">
-                                        <div class="text-sm flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-600">
-                                            <span class="font-semibold text-gray-800 flex items-center gap-1">
-                                                <x-heroicon-o-building-office class="w-3.5 h-3.5 shrink-0" />{{ $companyName }}
+                                        <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                                            <span class="font-semibold text-gray-800">
+                                                <x-heroicon-o-building-office class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $companyName }}
                                             </span>
                                             @if($job->category)
-                                                <span class="flex items-center gap-1">
-                                                    <x-heroicon-o-tag class="w-3.5 h-3.5 shrink-0" />{{ $job->category }}
-                                                </span>
+                                                <span><x-heroicon-o-tag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->category }}</span>
                                             @endif
                                             @if($job->location || $job->country)
-                                                <span class="flex items-center gap-1">
-                                                    <x-heroicon-o-map-pin class="w-3.5 h-3.5 shrink-0" />
-                                                    {{ $job->location ?: '' }}{{ $job->location && $job->country ? ', ' : '' }}{{ $job->country ?: '' }}
+                                                <span>
+                                                    <x-heroicon-o-map-pin class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->location ?: '' }}{{ $job->location && $job->country ? ', ' : '' }}{{ $job->country ?: '' }}
                                                 </span>
                                             @endif
                                         </div>

@@ -143,25 +143,25 @@
                             </div>
 
                             {{-- View + quick status --}}
-                            <div class="flex flex-col gap-2 w-full xl:w-auto xl:min-w-[200px]">
+                            <div class="flex flex-col gap-2 w-full xl:w-auto xl:w-48">
                                 <x-likeslocale.button :href="route('employer.applicants.show', $application)" variant="info">
                                     View Applicant
                                 </x-likeslocale.button>
 
                                 <form method="POST"
-                                      action="{{ route('employer.applications.update-status', $application) }}"
-                                      class="flex gap-2">
+                                      action="{{ route('employer.applications.update-status', $application) }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="notes" value="{{ $application->notes }}">
-                                    <select name="status" class="flex-1 rounded-2xl border-gray-300 shadow-sm text-sm">
+                                    <select name="status"
+                                            onchange="this.form.submit()"
+                                            class="w-full rounded-2xl border-gray-300 shadow-sm text-sm">
                                         @foreach(\App\Models\Application::EMPLOYER_STATUSES as $s)
                                             <option value="{{ $s }}" @selected($application->status === $s)>
                                                 {{ \App\Models\Application::labelFor($s) }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    <x-likeslocale.button type="submit" variant="accent">Save</x-likeslocale.button>
                                 </form>
                             </div>
                         </div>

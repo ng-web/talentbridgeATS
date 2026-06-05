@@ -139,55 +139,30 @@
                                         </div>
                                     </div>
 
-                                    {{-- Document summary (no links — detail page has full access) --}}
-                                    <div class="mt-3 flex flex-wrap gap-2">
-                                        @if($application->submitted_resume_path)
-                                            <span class="inline-flex items-center gap-1 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1 text-xs font-medium text-green-700">
-                                                <x-heroicon-o-document-text class="w-3.5 h-3.5" /> Resume
-                                            </span>
-                                        @endif
-                                        @if($application->submitted_cover_letter_path)
-                                            <span class="inline-flex items-center gap-1 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1 text-xs font-medium text-green-700">
-                                                <x-heroicon-o-document-text class="w-3.5 h-3.5" /> Cover Letter
-                                            </span>
-                                        @endif
-                                        @if($certificates->isNotEmpty())
-                                            <span class="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-medium text-blue-700">
-                                                <x-heroicon-o-academic-cap class="w-3.5 h-3.5" />
-                                                {{ $certificates->count() }} {{ Str::plural('Certificate', $certificates->count()) }}
-                                            </span>
-                                        @endif
-                                    </div>
                                 </div>
                             </div>
 
-                            {{-- View + Status update --}}
-                            <div class="flex flex-col gap-3 w-full xl:w-auto xl:min-w-[220px]">
+                            {{-- View + quick status --}}
+                            <div class="flex flex-col gap-2 w-full xl:w-auto xl:min-w-[200px]">
                                 <x-likeslocale.button :href="route('employer.applicants.show', $application)" variant="info">
                                     View Applicant
                                 </x-likeslocale.button>
 
-                            <form method="POST"
-                                  action="{{ route('employer.applications.update-status', $application) }}"
-                                  class="flex flex-col gap-3">
-                                @csrf
-                                @method('PATCH')
-
-                                <select name="status" class="rounded-2xl border-gray-300 shadow-sm w-full">
-                                    @foreach(\App\Models\Application::EMPLOYER_STATUSES as $s)
-                                        <option value="{{ $s }}" @selected($application->status === $s)>
-                                            {{ \App\Models\Application::labelFor($s) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-
-                                <textarea name="notes" rows="3"
-                                    placeholder="Internal notes (visible to your team only)…"
-                                    class="rounded-2xl border-gray-300 shadow-sm w-full text-sm resize-none"
-                                >{{ $application->notes }}</textarea>
-
-                                <x-likeslocale.button type="submit" variant="accent">Save</x-likeslocale.button>
-                            </form>
+                                <form method="POST"
+                                      action="{{ route('employer.applications.update-status', $application) }}"
+                                      class="flex gap-2">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="notes" value="{{ $application->notes }}">
+                                    <select name="status" class="flex-1 rounded-2xl border-gray-300 shadow-sm text-sm">
+                                        @foreach(\App\Models\Application::EMPLOYER_STATUSES as $s)
+                                            <option value="{{ $s }}" @selected($application->status === $s)>
+                                                {{ \App\Models\Application::labelFor($s) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <x-likeslocale.button type="submit" variant="accent">Save</x-likeslocale.button>
+                                </form>
                             </div>
                         </div>
                     </x-likeslocale.operation-row>

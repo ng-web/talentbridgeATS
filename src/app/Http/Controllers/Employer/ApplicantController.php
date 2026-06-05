@@ -9,12 +9,13 @@ use App\Models\JobSeekerDocument;
 use App\Notifications\ApplicationStatusChangedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 final class ApplicantController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $employer = Auth::user()->employer;
 
@@ -42,7 +43,13 @@ final class ApplicantController extends Controller
             ->orderBy('title')
             ->get(['id', 'title']);
 
-        return view('employer.applicants.index', compact('applications', 'jobs', 'q', 'jobId', 'status'));
+        $data = compact('applications', 'jobs', 'q', 'jobId', 'status');
+
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->view('employer.applicants.partials.list', $data);
+        }
+
+        return view('employer.applicants.index', $data);
     }
 
     public function show(Application $application): View

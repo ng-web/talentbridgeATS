@@ -12,6 +12,7 @@ use App\Models\Location;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -19,18 +20,38 @@ use Illuminate\View\View;
 
 final class JobController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View|Response
     {
         $employer = Auth::user()->employer;
 
         abort_unless($employer, 404);
 
+        $status      = trim((string) $request->query('status', ''));
+        $listingType = trim((string) $request->query('listing_type', ''));
+
         $jobs = Job::query()
             ->where('employer_id', $employer->id)
+            ->when($status !== '', fn ($q) => $q->where('status', $status))
+            ->when($listingType !== '', fn ($q) => $q->where('listing_type', $listingType))
             ->latest()
             ->get();
 
-        return view('employer.jobs.index', compact('jobs'));
+        // Scoped filter options — only what this employer has posted
+        $availableStatuses = Job::query()
+            ->where('employer_id', $employer->id)
+            ->distinct()->pluck('status');
+
+        $availableTypes = Job::query()
+            ->where('employer_id', $employer->id)
+            ->distinct()->pluck('listing_type');
+
+        $data = compact('jobs', 'availableStatuses', 'availableTypes', 'status', 'listingType');
+
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->view('employer.jobs.partials.list', $data);
+        }
+
+        return view('employer.jobs.index', $data);
     }
 
     public function create(): View

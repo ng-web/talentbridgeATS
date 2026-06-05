@@ -1,94 +1,88 @@
 <x-layouts.portal :title="'My Jobs'" heading="My Jobs" subheading="Manage your current job listings and their statuses." portalRole="employer">
-    <div class="space-y-6">
-        <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h3 class="text-2xl font-semibold">Job Listings</h3>
-                    <p class="mt-1 text-sm text-gray-500">Create and manage all jobs under your employer account.</p>
-                </div>
+    <div class="space-y-4">
 
-                <x-likeslocale.button :href="route('employer.jobs.create')" variant="accent">
+        {{-- Compact header + filters --}}
+        <div class="rounded-3xl bg-white p-5 shadow border border-gray-100">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+
+                <form id="jobs-filter-form" method="GET" action="{{ route('employer.jobs.index') }}"
+                      class="flex flex-1 flex-wrap gap-3 items-center">
+
+                    @if($availableStatuses->count() > 1)
+                        <select id="jobs-status" name="status" class="rounded-2xl border-gray-300 shadow-sm text-sm w-full sm:w-40">
+                            <option value="">All statuses</option>
+                            @foreach($availableStatuses as $s)
+                                <option value="{{ $s }}" @selected($status === $s)>
+                                    {{ \App\Models\Job::labelFor($s) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+
+                    @if($availableTypes->count() > 1)
+                        <select id="jobs-type" name="listing_type" class="rounded-2xl border-gray-300 shadow-sm text-sm w-full sm:w-48">
+                            <option value="">All programme types</option>
+                            @foreach($availableTypes as $t)
+                                <option value="{{ $t }}" @selected($listingType === $t)>
+                                    {{ \App\Models\Job::listingTypeLabelFor($t) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+
+                    @if($status || $listingType)
+                        <a href="{{ route('employer.jobs.index') }}" id="jobs-filter-reset"
+                           class="text-sm text-gray-400 hover:text-[#6f4cb2] hover:underline whitespace-nowrap">
+                            Clear filters
+                        </a>
+                    @endif
+                </form>
+
+                <x-likeslocale.button :href="route('employer.jobs.create')" variant="accent" class="shrink-0">
                     Create Job
                 </x-likeslocale.button>
             </div>
         </div>
 
-        @if($jobs->isEmpty())
-            <div class="rounded-3xl bg-white p-8 shadow border border-gray-100 text-center">
-                <h3 class="text-xl font-semibold text-gray-900">No jobs created yet</h3>
-                <p class="mt-2 text-gray-500">Create your first job listing to begin receiving applicants.</p>
-            </div>
-        @else
-            <div class="space-y-3">
-                @foreach($jobs as $job)
-                    @php
-                        $companyName = $job->employer?->company_name ?: ($job->employer?->user?->name ?: 'Company');
-                        $logoPath = $job->employer?->logo_path;
-                        $initial = strtoupper(mb_substr($companyName, 0, 1));
-                    @endphp
-
-                    <x-likeslocale.operation-row>
-                        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-                            <a href="{{ route('employer.jobs.edit', $job) }}" class="flex items-start gap-4 min-w-0 flex-1">
-                                <div class="shrink-0">
-                                    @if($logoPath)
-                                        <img src="{{ asset('storage/'.$logoPath) }}"
-                                             alt="{{ $companyName }}"
-                                             class="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-white">
-                                    @else
-                                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold shadow-sm bg-[#6f4cb2]">
-                                            {{ $initial }}
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-lg font-semibold tracking-[0.02em] text-[#6f4cb2]">
-                                            {{ $job->title }}
-                                        </h3>
-
-                                        <x-likeslocale.status-pill tone="brand">
-                                            {{ ucfirst(str_replace('_', ' ', $job->listing_type)) }}
-                                        </x-likeslocale.status-pill>
-
-                                        <x-likeslocale.status-pill tone="neutral">
-                                            {{ ucfirst(str_replace('_', ' ', $job->status)) }}
-                                        </x-likeslocale.status-pill>
-
-                                        <x-likeslocale.status-pill :tone="$job->is_approved ? 'success' : 'warning'">
-                                            {{ $job->is_approved ? 'Approved' : 'Pending Review' }}
-                                        </x-likeslocale.status-pill>
-                                    </div>
-
-                                    <div class="border-t border-gray-100 mt-3 pt-2.5">
-                                        <div class="text-sm flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
-                                            <span class="font-semibold text-gray-800">
-                                                <x-heroicon-o-building-office class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $companyName }}
-                                            </span>
-                                            @if($job->category)
-                                                <span><x-heroicon-o-tag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->category }}</span>
-                                            @endif
-                                            @if($job->location || $job->country)
-                                                <span><x-heroicon-o-map-pin class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->location ?: '' }}{{ $job->location && $job->country ? ', ' : '' }}{{ $job->country ?: '' }}</span>
-                                            @endif
-                                            @if($job->duration)
-                                                <span><x-heroicon-o-clock class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $job->duration }}</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-
-                            <div class="xl:shrink-0">
-                                <x-likeslocale.button :href="route('employer.jobs.edit', $job)" variant="info">
-                                    Edit
-                                </x-likeslocale.button>
-                            </div>
-                        </div>
-                    </x-likeslocale.operation-row>
-                @endforeach
-            </div>
-        @endif
+        {{-- Job list --}}
+        <div id="jobs-list-region">
+            @include('employer.jobs.partials.list')
+        </div>
     </div>
+
+    @push('scripts')
+    <script>
+        (() => {
+            const form      = document.getElementById('jobs-filter-form');
+            const region    = document.getElementById('jobs-list-region');
+            const statusSel = document.getElementById('jobs-status');
+            const typeSel   = document.getElementById('jobs-type');
+            const reset     = document.getElementById('jobs-filter-reset');
+
+            if (!form || !region) return;
+
+            const fetchList = async (url = null) => {
+                const params = new URLSearchParams(new FormData(form));
+                const target = url ?? `${form.action}?${params.toString()}`;
+                region.style.opacity = '0.6';
+                try {
+                    const res = await fetch(target, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' }
+                    });
+                    if (!res.ok) return;
+                    region.innerHTML = await res.text();
+                    window.history.replaceState({}, '', target);
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    region.style.opacity = '1';
+                }
+            };
+
+            statusSel?.addEventListener('change', () => fetchList());
+            typeSel?.addEventListener('change', () => fetchList());
+            reset?.addEventListener('click', e => { e.preventDefault(); form.reset(); fetchList(form.action); });
+        })();
+    </script>
+    @endpush
 </x-layouts.portal>

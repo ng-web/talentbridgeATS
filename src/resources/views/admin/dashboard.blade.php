@@ -217,7 +217,7 @@
     </div>
 
     {{-- Bottom three-panel row --}}
-    <div class="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         {{-- Recent Pending Jobs --}}
         <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
             <div class="flex items-center justify-between gap-4">

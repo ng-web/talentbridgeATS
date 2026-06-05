@@ -64,15 +64,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex flex-col lg:flex-row lg:items-center gap-4 xl:gap-8 xl:shrink-0">
-                                <div class="text-sm text-gray-500">
-                                    {{ $job->location ?: 'Location TBD' }}
-                                    @if($job->country)
-                                        <span class="mx-2 text-gray-300">|</span>{{ $job->country }}
-                                    @endif
-                                </div>
-
-                                <div class="flex flex-wrap gap-3">
+                            <div class="flex flex-wrap gap-3 xl:shrink-0">
                                     @if(!$job->is_approved || $job->status !== \App\Models\Job::STATUS_PUBLISHED)
                                         <form method="POST" action="{{ route('admin.jobs.approve', $job) }}"
                                             onsubmit="return confirm('Approve and publish this job?');">
@@ -105,7 +97,6 @@
                                             </x-likeslocale.button>
                                         </form>
                                     @endif
-                                </div>
                             </div>
                     </div>
                 </x-likeslocale.operation-row>

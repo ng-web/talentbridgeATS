@@ -118,62 +118,78 @@
                 </div>
             </div>
 
-            {{-- Profile / Compliance Documents --}}
+            {{-- Qualifications / Certificates (employer-visible) --}}
             @php
-                $sensitiveTypes = [
-                    \App\Models\JobSeekerDocument::TYPE_PASSPORT,
-                    \App\Models\JobSeekerDocument::TYPE_POLICE_RECORD,
-                    \App\Models\JobSeekerDocument::TYPE_MEDICAL_RECORD,
-                ];
+                $certs = $docsByType[\App\Models\JobSeekerDocument::TYPE_CERTIFICATE] ?? collect();
             @endphp
-            @foreach($categories as $categoryLabel => $types)
-                @php
-                    $hasDocs = collect($types)->some(fn($t) => ($docsByType[$t] ?? collect())->isNotEmpty());
-                @endphp
-
-                <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
-                    <h3 class="text-base font-semibold text-gray-900 mb-4">{{ $categoryLabel }}</h3>
-                    <div class="space-y-3">
-                        @foreach($types as $type)
-                            @php
-                                $docs      = $docsByType[$type] ?? collect();
-                                $label     = \App\Models\JobSeekerDocument::labelFor($type);
-                                $sensitive = in_array($type, $sensitiveTypes);
-                            @endphp
-
-                            <div class="rounded-2xl border p-4 {{ $docs->isNotEmpty() && !$sensitive ? 'border-green-200 bg-green-50/40' : ($sensitive ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-gray-50') }}">
-                                <div class="flex items-center justify-between mb-2">
-                                    <p class="text-sm font-semibold text-gray-900">{{ $label }}</p>
-                                    @if($sensitive)
-                                        <x-likeslocale.status-pill tone="neutral">Admin only</x-likeslocale.status-pill>
-                                    @elseif($docs->isNotEmpty())
-                                        <x-likeslocale.status-pill tone="success">
-                                            {{ $docs->count() > 1 ? $docs->count() . ' files' : 'Uploaded' }}
-                                        </x-likeslocale.status-pill>
-                                    @else
-                                        <x-likeslocale.status-pill tone="neutral">Not uploaded</x-likeslocale.status-pill>
-                                    @endif
-                                </div>
-
-                                @if($sensitive)
-                                    <p class="text-xs text-gray-400">This document is restricted to admin review only.</p>
-                                @elseif($docs->isNotEmpty())
-                                    <div class="space-y-1">
-                                        @foreach($docs as $doc)
-                                            <a href="{{ asset('storage/'.$doc->file_path) }}"
-                                               target="_blank"
-                                               class="block text-sm font-medium text-[#6f4cb2] hover:underline truncate"
-                                               title="{{ $doc->original_name }}">
-                                                {{ $doc->original_name ?: 'View document' }} →
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                @endif
+            <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
+                <h3 class="text-base font-semibold text-gray-900 mb-4">Education & Qualifications</h3>
+                @if($certs->isNotEmpty())
+                    <div class="space-y-2">
+                        @foreach($certs as $cert)
+                            <div class="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50/40 px-4 py-3">
+                                <span class="text-sm font-medium text-gray-900 truncate">{{ $cert->original_name ?: 'Certificate' }}</span>
+                                <a href="{{ asset('storage/'.$cert->file_path) }}"
+                                   target="_blank"
+                                   class="ml-3 shrink-0 text-sm font-medium text-[#6f4cb2] hover:underline">
+                                    View →
+                                </a>
                             </div>
                         @endforeach
                     </div>
+                @else
+                    <p class="text-sm text-gray-400">No qualifications uploaded yet.</p>
+                @endif
+            </div>
+
+            {{-- Verification Status (admin-verified compliance — no files exposed) --}}
+            @php
+                $hasIdentity  = ($docsByType[\App\Models\JobSeekerDocument::TYPE_PASSPORT] ?? collect())->isNotEmpty()
+                             || ($docsByType[\App\Models\JobSeekerDocument::TYPE_DRIVERS_LICENSE] ?? collect())->isNotEmpty();
+                $hasPolice    = ($docsByType[\App\Models\JobSeekerDocument::TYPE_POLICE_RECORD] ?? collect())->isNotEmpty();
+                $hasMedical   = ($docsByType[\App\Models\JobSeekerDocument::TYPE_MEDICAL_RECORD] ?? collect())->isNotEmpty();
+            @endphp
+            <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
+                <h3 class="text-base font-semibold text-gray-900 mb-1">Verification Status</h3>
+                <p class="text-xs text-gray-400 mb-4">Compliance documents are reviewed by Kairox Administration only.</p>
+
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        @if($hasIdentity)
+                            <x-heroicon-o-check-circle class="w-5 h-5 text-green-500 shrink-0" />
+                            <span class="text-sm font-medium text-gray-800">Identity Verified</span>
+                        @else
+                            <x-heroicon-o-clock class="w-5 h-5 text-amber-400 shrink-0" />
+                            <span class="text-sm text-gray-500">Identity — Pending</span>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        @if($hasPolice)
+                            <x-heroicon-o-check-circle class="w-5 h-5 text-green-500 shrink-0" />
+                            <span class="text-sm font-medium text-gray-800">Background Check Complete</span>
+                        @else
+                            <x-heroicon-o-clock class="w-5 h-5 text-amber-400 shrink-0" />
+                            <span class="text-sm text-gray-500">Background Check — Pending</span>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        @if($hasMedical)
+                            <x-heroicon-o-check-circle class="w-5 h-5 text-green-500 shrink-0" />
+                            <span class="text-sm font-medium text-gray-800">Medical Clearance Complete</span>
+                        @else
+                            <x-heroicon-o-clock class="w-5 h-5 text-amber-400 shrink-0" />
+                            <span class="text-sm text-gray-500">Medical Clearance — Pending</span>
+                        @endif
+                    </div>
                 </div>
-            @endforeach
+
+                <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
+                    <x-heroicon-o-shield-check class="w-4 h-4 text-gray-400 shrink-0" />
+                    <p class="text-xs text-gray-400">Verified by Kairox Administration</p>
+                </div>
+            </div>
         </div>
 
         {{-- Right: Workflow --}}

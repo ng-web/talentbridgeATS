@@ -29,9 +29,13 @@ Route::get('/', function () {
 Route::get('/apply', ApplyController::class)->name('apply');
 Route::get('/pricing', PricingController::class)->name('pricing');
 
+Route::get('/payment-assistance/thank-you', [PaymentAssistanceController::class, 'thankyou'])->name('payment-assistance.thankyou');
 Route::get('/payment-assistance/{plan:slug}', [PaymentAssistanceController::class, 'create'])->name('payment-assistance.create');
 Route::post('/payment-assistance/{plan:slug}', [PaymentAssistanceController::class, 'store'])->name('payment-assistance.store');
-Route::get('/payment-assistance/thank-you', [PaymentAssistanceController::class, 'thankyou'])->name('payment-assistance.thankyou');
+
+Route::get('/contact', [PaymentAssistanceController::class, 'contact'])->name('contact');
+Route::post('/contact', [PaymentAssistanceController::class, 'contactStore'])->name('contact.store');
+Route::get('/contact/thank-you', [PaymentAssistanceController::class, 'contactThankyou'])->name('contact.thankyou');
 
 Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');

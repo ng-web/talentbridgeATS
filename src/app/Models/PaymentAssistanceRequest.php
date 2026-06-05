@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class PaymentAssistanceRequest extends Model
 {
+    public const TYPE_PAYMENT_ASSISTANCE = 'payment_assistance';
+    public const TYPE_CONTACT            = 'contact';
+
     public const STATUS_NEW          = 'new';
     public const STATUS_CONTACTED    = 'contacted';
     public const STATUS_PAYMENT_SENT = 'payment_sent';
@@ -30,8 +33,10 @@ final class PaymentAssistanceRequest extends Model
     ];
 
     protected $fillable = [
+        'type',
         'user_id',
         'plan_id',
+        'subject',
         'full_name',
         'email',
         'phone',

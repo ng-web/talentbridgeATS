@@ -281,7 +281,7 @@
                         Your access is pending activation by the Kairox team.
                     </p>
                     <div class="mt-4">
-                        <a href="mailto:info@kairox.com"
+                        <a href="{{ route('contact') }}"
                            class="text-sm font-medium text-[#50b7a4] hover:underline">
                             Contact us to activate →
                         </a>

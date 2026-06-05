@@ -27,7 +27,7 @@
             </div>
 
             <div class="mt-6 flex flex-wrap gap-3">
-                <x-likeslocale.button href="mailto:info@kairox.com" variant="accent">
+                <x-likeslocale.button :href="route('contact')" variant="accent">
                     Contact Kairox Team
                 </x-likeslocale.button>
 

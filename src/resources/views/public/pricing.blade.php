@@ -120,7 +120,7 @@
         <div class="mt-8">
             <p class="text-sm text-gray-500">
                 Interested in listing opportunities on Kairox Exchange?
-                <a href="mailto:info@kairox.com" class="text-[#50b7a4] font-medium hover:underline">Contact our team</a>
+                <a href="{{ route('contact') }}" class="text-[#50b7a4] font-medium hover:underline">Contact our team</a>
                 to get set up.
             </p>
         </div>

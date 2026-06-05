@@ -72,4 +72,60 @@ final class PaymentAssistanceController extends Controller
     {
         return view('public.payment-assistance-thankyou');
     }
+
+    public function contact(): View
+    {
+        $user      = Auth::user();
+        $jobSeeker = $user?->jobSeeker;
+
+        return view('public.contact', compact('user', 'jobSeeker'));
+    }
+
+    public function contactStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:120'],
+            'email'     => ['required', 'email', 'max:255'],
+            'phone'     => ['nullable', 'string', 'max:30'],
+            'whatsapp'  => ['nullable', 'string', 'max:30'],
+            'subject'   => ['required', 'string', 'max:255'],
+            'message'   => ['required', 'string', 'max:2000'],
+        ]);
+
+        $enquiry = PaymentAssistanceRequest::create([
+            'type'         => PaymentAssistanceRequest::TYPE_CONTACT,
+            'user_id'      => Auth::id(),
+            'plan_id'      => null,
+            'full_name'    => $validated['full_name'],
+            'email'        => $validated['email'],
+            'phone'        => $validated['phone'] ?? null,
+            'whatsapp'     => $validated['whatsapp'] ?? null,
+            'subject'      => $validated['subject'],
+            'program_name' => $validated['subject'],
+            'message'      => $validated['message'],
+            'status'       => PaymentAssistanceRequest::STATUS_NEW,
+        ]);
+
+        try {
+            Mail::to(config('mail.admin_address', config('mail.from.address')))
+                ->send(new PaymentAssistanceAdminMail($enquiry));
+        } catch (\Throwable $e) {
+            Log::error('Contact: admin notification failed', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            Mail::to($enquiry->email)
+                ->send(new PaymentAssistanceApplicantMail($enquiry));
+        } catch (\Throwable $e) {
+            Log::error('Contact: applicant confirmation failed', ['error' => $e->getMessage()]);
+        }
+
+        return redirect()->route('contact.thankyou')
+            ->with('subject', $validated['subject']);
+    }
+
+    public function contactThankyou(): View
+    {
+        return view('public.contact-thankyou');
+    }
 }

@@ -3,16 +3,24 @@
 
         {{-- Filters --}}
         <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-900">Search & Filter</h3>
-                    <p class="mt-0.5 text-sm text-gray-500">Filter by applicant name, job listing, or pipeline stage.</p>
-                </div>
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Search & Filter</h3>
+
+                {{-- Quick-filter pills --}}
+                @php $baseParams = array_filter(['q' => $q ?: null, 'job_id' => $jobId ?: null]); @endphp
                 <div class="flex flex-wrap gap-2">
                     @foreach(\App\Models\Application::EMPLOYER_STATUSES as $s)
-                        <x-likeslocale.status-pill :tone="\App\Models\Application::toneFor($s)">
+                        @php $isActive = $status === $s; @endphp
+                        <a href="{{ route('employer.applicants.index', array_merge($baseParams, $isActive ? [] : ['status' => $s])) }}"
+                           class="inline-flex items-center px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors
+                               {{ $isActive
+                                   ? 'border-[#6f4cb2] bg-[#6f4cb2] text-white shadow-sm'
+                                   : 'border-gray-300 bg-white text-gray-600 hover:border-[#6f4cb2] hover:text-[#6f4cb2]' }}">
                             {{ \App\Models\Application::labelFor($s) }}
-                        </x-likeslocale.status-pill>
+                            @if($isActive)
+                                <span class="ml-1.5 opacity-70">×</span>
+                            @endif
+                        </a>
                     @endforeach
                 </div>
             </div>

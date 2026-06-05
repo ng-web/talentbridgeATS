@@ -108,6 +108,23 @@
         </a>
     </div>
 
+    {{-- Payment Assistance --}}
+    @if($newAssistanceRequestsCount > 0)
+    <div class="mt-4">
+        <a href="{{ route('admin.payment-assistance.index', ['status' => 'new']) }}"
+           class="flex items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow hover:ring-2 hover:ring-amber-300/40 transition-all">
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style="background:#fff4e5; color:#c3872b;">
+                <x-heroicon-o-academic-cap class="w-5 h-5" />
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-2xl font-bold text-amber-800">{{ $newAssistanceRequestsCount }}</p>
+                <p class="text-sm text-amber-700">New payment assistance {{ Str::plural('request', $newAssistanceRequestsCount) }} awaiting follow-up</p>
+            </div>
+            <span class="text-sm font-medium text-amber-700 hover:underline shrink-0">View Requests →</span>
+        </a>
+    </div>
+    @endif
+
     {{-- Quick actions + operational note --}}
     <div class="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div class="xl:col-span-2 rounded-3xl bg-white p-8 shadow border border-gray-100">

@@ -20,12 +20,18 @@ use App\Http\Controllers\Public\ApplyController;
 use App\Http\Controllers\Public\PricingController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Public\PaymentAssistanceController;
+
 Route::get('/', function () {
     return view('welcome');
 });
 
 Route::get('/apply', ApplyController::class)->name('apply');
 Route::get('/pricing', PricingController::class)->name('pricing');
+
+Route::get('/payment-assistance/{plan:slug}', [PaymentAssistanceController::class, 'create'])->name('payment-assistance.create');
+Route::post('/payment-assistance/{plan:slug}', [PaymentAssistanceController::class, 'store'])->name('payment-assistance.store');
+Route::get('/payment-assistance/thank-you', [PaymentAssistanceController::class, 'thankyou'])->name('payment-assistance.thankyou');
 
 Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -130,6 +136,9 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
 
         Route::post('/payments/{payment}/activate', [PaymentReviewController::class, 'activate'])
             ->name('payments.activate');
+
+        Route::get('/payment-assistance', [\App\Http\Controllers\Admin\PaymentAssistanceController::class, 'index'])->name('payment-assistance.index');
+        Route::patch('/payment-assistance/{assistanceRequest}/status', [\App\Http\Controllers\Admin\PaymentAssistanceController::class, 'updateStatus'])->name('payment-assistance.update-status');
 
         Route::get('/reference-data', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'index'])->name('reference-data.index');
         Route::post('/countries', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeCountry'])->name('countries.store');

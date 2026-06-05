@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\Entitlement;
 use App\Models\Job;
 use App\Models\Payment;
+use App\Models\PaymentAssistanceRequest;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -73,6 +74,10 @@ final class DashboardController extends Controller
             ->whereNull('entitlement_activated_at')
             ->count();
 
+        $newAssistanceRequestsCount = PaymentAssistanceRequest::query()
+            ->where('status', PaymentAssistanceRequest::STATUS_NEW)
+            ->count();
+
         return view('admin.dashboard', [
             'pendingJobsCount' => $pendingJobsCount,
             'publishedJobsCount' => $publishedJobsCount,
@@ -86,7 +91,8 @@ final class DashboardController extends Controller
             'recentPendingJobs' => $recentPendingJobs,
             'recentReviewPayments' => $recentReviewPayments,
             'expiringEntitlements' => $expiringEntitlements,
-            'unactivatedPaymentsCount' => $unactivatedPaymentsCount,
+            'unactivatedPaymentsCount'      => $unactivatedPaymentsCount,
+            'newAssistanceRequestsCount'    => $newAssistanceRequestsCount,
         ]);
     }
 }

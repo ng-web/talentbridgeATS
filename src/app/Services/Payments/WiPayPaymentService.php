@@ -33,7 +33,7 @@ final class WiPayPaymentService implements PaymentServiceInterface
         $payload = [
             'account_number' => (string) config('services.wipay.account_number'),
             'country_code'   => (string) config('services.wipay.country_code', 'JM'),
-            'currency'       => (string) config('services.wipay.currency', 'JMD'),
+            'currency'       => (string) ($meta['currency'] ?? $payment->currency ?? config('services.wipay.currency', 'JMD')),
             'environment'    => (string) config('services.wipay.environment', 'live'),
             'fee_structure'  => (string) config('services.wipay.fee_structure', 'customer_pay'),
             'method'         => 'credit_card',

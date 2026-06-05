@@ -49,7 +49,10 @@ final class JobController extends Controller
             $query->where('remote_flag', true);
         }
 
-        $jobs = $query->latest()->get();
+        $jobs = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         $availableLocations = (clone $baseQuery)
             ->whereNotNull('location')

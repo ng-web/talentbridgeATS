@@ -140,6 +140,8 @@ final class CheckoutController extends Controller
                     'id' => $plan->id,
                     'slug' => $plan->slug,
                     'name' => $plan->name,
+                    'currency' => $plan->currency,
+                    'amount' => $plan->amount,
                 ],
             ],
             'paid_at' => null,
@@ -151,6 +153,7 @@ final class CheckoutController extends Controller
             $session = $gateway->createCheckoutSession($payment, $user, [
                 'response_url' => route('payments.wipay.callback'),
                 'origin' => config('services.wipay.origin', 'KairoxExchange'),
+                'currency' => $payment->currency,
             ]);
 
             $payment->update([

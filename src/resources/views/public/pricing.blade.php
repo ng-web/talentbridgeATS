@@ -20,9 +20,7 @@
 
                 <div class="flex items-center gap-3 mb-4">
                     <x-likeslocale.status-pill tone="brand">Job Seeker</x-likeslocale.status-pill>
-                    @if($isPremium)
-                        <x-likeslocale.status-pill tone="warning">Most Popular</x-likeslocale.status-pill>
-                    @endif
+                    
                 </div>
 
                 <h3 class="text-xl font-semibold text-gray-900">{{ $plan->name }}</h3>
@@ -49,21 +47,34 @@
                     </ul>
                 @endif
 
+                @php $requiresAssistance = $plan->currency === 'USD' && $plan->amount >= 3000; @endphp
+
                 <div class="mt-8 flex flex-wrap gap-3">
-                    @auth
+                    @if($requiresAssistance)
                         <x-likeslocale.button
-                            :href="route('payments.wipay.seeker', $plan->slug)"
+                            :href="route('payment-assistance.create', $plan->slug)"
                             variant="accent">
-                            Apply Now
+                            Request Payment Assistance
                         </x-likeslocale.button>
+                        <p class="w-full text-xs text-gray-400 mt-1">
+                            This programme requires a payment arrangement — our team will contact you within 1 business day.
+                        </p>
                     @else
-                        <x-likeslocale.button :href="route('register')" variant="accent">
-                            Get Started
-                        </x-likeslocale.button>
-                        <x-likeslocale.button :href="route('login')" variant="slate">
-                            Sign In
-                        </x-likeslocale.button>
-                    @endauth
+                        @auth
+                            <x-likeslocale.button
+                                :href="route('payments.wipay.seeker', $plan->slug)"
+                                variant="accent">
+                                Apply Now
+                            </x-likeslocale.button>
+                        @else
+                            <x-likeslocale.button :href="route('register')" variant="accent">
+                                Get Started
+                            </x-likeslocale.button>
+                            <x-likeslocale.button :href="route('login')" variant="slate">
+                                Sign In
+                            </x-likeslocale.button>
+                        @endauth
+                    @endif
                 </div>
             </div>
         @endforeach

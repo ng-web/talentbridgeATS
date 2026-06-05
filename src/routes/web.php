@@ -94,6 +94,7 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
             Route::get('/jobs/{job}/edit', [EmployerJobController::class, 'edit'])->name('jobs.edit');
             Route::patch('/jobs/{job}', [EmployerJobController::class, 'update'])->name('jobs.update');
             Route::get('/applicants', [EmployerApplicantController::class, 'index'])->name('applicants.index');
+            Route::get('/applicants/{application}', [EmployerApplicantController::class, 'show'])->name('applicants.show');
             Route::patch('/applications/{application}/status', [EmployerApplicantController::class, 'updateStatus'])->name('applications.update-status');
         });
     });

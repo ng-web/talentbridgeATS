@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employer;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Job;
+use App\Models\JobSeekerDocument;
 use App\Notifications\ApplicationStatusChangedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,6 +43,20 @@ final class ApplicantController extends Controller
             ->get(['id', 'title']);
 
         return view('employer.applicants.index', compact('applications', 'jobs', 'q', 'jobId', 'status'));
+    }
+
+    public function show(Application $application): View
+    {
+        $employer = Auth::user()->employer;
+
+        abort_unless($employer && $application->job?->employer_id === $employer->id, 403);
+
+        $application->load(['job', 'jobSeeker.user', 'jobSeeker.documents']);
+
+        $docsByType    = $application->jobSeeker->documents->groupBy('document_type');
+        $categories    = JobSeekerDocument::CATEGORIES;
+
+        return view('employer.applicants.show', compact('application', 'docsByType', 'categories'));
     }
 
     public function updateStatus(Request $request, Application $application): RedirectResponse

@@ -140,60 +140,37 @@
                                         </div>
                                     </div>
 
-                                    {{-- Documents --}}
-                                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
-                                        <div class="rounded-2xl border border-gray-200 bg-white/70 p-4">
-                                            <p class="text-sm font-medium text-gray-900">Resume</p>
-                                            @if($application->submitted_resume_path)
-                                                <a href="{{ asset('storage/'.$application->submitted_resume_path) }}"
-                                                   target="_blank"
-                                                   class="mt-2 inline-block text-sm font-medium text-[#6f4cb2] hover:underline">View</a>
-                                            @else
-                                                <p class="mt-2 text-sm text-gray-500">Not submitted</p>
-                                            @endif
-                                        </div>
-
-                                        <div class="rounded-2xl border border-gray-200 bg-white/70 p-4">
-                                            <p class="text-sm font-medium text-gray-900">Cover Letter</p>
-                                            @if($application->submitted_cover_letter_path)
-                                                <a href="{{ asset('storage/'.$application->submitted_cover_letter_path) }}"
-                                                   target="_blank"
-                                                   class="mt-2 inline-block text-sm font-medium text-[#6f4cb2] hover:underline">View</a>
-                                            @else
-                                                <p class="mt-2 text-sm text-gray-500">Not submitted</p>
-                                            @endif
-                                        </div>
-
-                                        <div class="rounded-2xl border border-gray-200 bg-white/70 p-4">
-                                            <p class="text-sm font-medium text-gray-900">
-                                                Qualifications
-                                                @if($certificates->count() > 1)
-                                                    <span class="text-xs text-gray-400 font-normal">({{ $certificates->count() }})</span>
-                                                @endif
-                                            </p>
-                                            @if($certificates->isNotEmpty())
-                                                <div class="mt-2 space-y-1">
-                                                    @foreach($certificates as $cert)
-                                                        <a href="{{ asset('storage/'.$cert->file_path) }}"
-                                                           target="_blank"
-                                                           class="block text-sm font-medium text-[#6f4cb2] hover:underline truncate"
-                                                           title="{{ $cert->original_name }}">
-                                                            {{ $cert->original_name ?: 'Certificate ' . $loop->iteration }}
-                                                        </a>
-                                                    @endforeach
-                                                </div>
-                                            @else
-                                                <p class="mt-2 text-sm text-gray-500">Not uploaded</p>
-                                            @endif
-                                        </div>
+                                    {{-- Document summary (no links — detail page has full access) --}}
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        @if($application->submitted_resume_path)
+                                            <span class="inline-flex items-center gap-1 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1 text-xs font-medium text-green-700">
+                                                <x-heroicon-o-document-text class="w-3.5 h-3.5" /> Resume
+                                            </span>
+                                        @endif
+                                        @if($application->submitted_cover_letter_path)
+                                            <span class="inline-flex items-center gap-1 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1 text-xs font-medium text-green-700">
+                                                <x-heroicon-o-document-text class="w-3.5 h-3.5" /> Cover Letter
+                                            </span>
+                                        @endif
+                                        @if($certificates->isNotEmpty())
+                                            <span class="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-medium text-blue-700">
+                                                <x-heroicon-o-academic-cap class="w-3.5 h-3.5" />
+                                                {{ $certificates->count() }} {{ Str::plural('Certificate', $certificates->count()) }}
+                                            </span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Status update form --}}
+                            {{-- View + Status update --}}
+                            <div class="flex flex-col gap-3 w-full xl:w-auto xl:min-w-[220px]">
+                                <x-likeslocale.button :href="route('employer.applicants.show', $application)" variant="info">
+                                    View Applicant
+                                </x-likeslocale.button>
+
                             <form method="POST"
                                   action="{{ route('employer.applications.update-status', $application) }}"
-                                  class="flex flex-col gap-3 w-full xl:w-auto xl:min-w-[220px]">
+                                  class="flex flex-col gap-3">
                                 @csrf
                                 @method('PATCH')
 
@@ -212,6 +189,7 @@
 
                                 <x-likeslocale.button type="submit" variant="accent">Save</x-likeslocale.button>
                             </form>
+                            </div>
                         </div>
                     </x-likeslocale.operation-row>
                 @endforeach

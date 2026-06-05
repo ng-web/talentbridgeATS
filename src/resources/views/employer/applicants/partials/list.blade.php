@@ -68,7 +68,7 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-2 w-full xl:w-48">
+                    <div class="flex flex-col gap-2 w-full xl:w-36">
                         <x-likeslocale.button :href="route('employer.applicants.show', $application)" variant="info">
                             View Applicant
                         </x-likeslocale.button>

@@ -92,6 +92,11 @@
                                     @method('PATCH')
                                     <x-likeslocale.button type="submit" variant="secondary">Withdraw</x-likeslocale.button>
                                 </form>
+                            @elseif($application->status === \App\Models\Application::STATUS_SHORTLISTED)
+                                <a href="{{ route('contact') }}"
+                                   class="text-xs text-gray-400 hover:text-[#6f4cb2] hover:underline whitespace-nowrap">
+                                    Contact to withdraw
+                                </a>
                             @endif
                         </div>
                     </div>

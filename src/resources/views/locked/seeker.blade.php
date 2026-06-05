@@ -43,7 +43,7 @@
 
                             <div class="mt-4">
                                 <x-likeslocale.button
-                                    :href="route('pricing')"
+                                    :href="route('payment-assistance.create', $plan->slug)"
                                     variant="secondary"
                                     class="w-full justify-center"
                                 >

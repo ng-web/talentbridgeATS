@@ -44,10 +44,10 @@
                                             <span class="text-gray-500"><x-heroicon-o-rectangle-stack class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->plan->name }}</span>
                                         @endif
                                         @if($payment->order_id)
-                                            <span class="text-gray-400"><x-heroicon-o-hashtag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->order_id }}</span>
+                                            <span class="text-gray-400"><x-heroicon-o-hashtag class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" /><span class="font-medium text-gray-500">Order:</span> {{ $payment->order_id }}</span>
                                         @endif
                                         @if($payment->external_ref)
-                                            <span class="text-gray-400"><x-heroicon-o-arrow-top-right-on-square class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $payment->external_ref }}</span>
+                                            <span class="text-gray-400"><x-heroicon-o-arrow-top-right-on-square class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" /><span class="font-medium text-gray-500">Ref:</span> {{ $payment->external_ref }}</span>
                                         @endif
 
                                         @if(data_get($payment->raw_payload, 'notes'))

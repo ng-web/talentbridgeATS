@@ -1,0 +1,100 @@
+services:
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - nginx
+    networks:
+      - talentbridge
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www/html:ro
+      - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - talentbridge
+
+  app:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    user: "1000:1000"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - talentbridge
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-kairox_portal}
+      MYSQL_USER: ${DB_USERNAME:-kairox}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+    expose:
+      - "3306"
+    volumes:
+      - talentbridge_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - talentbridge
+
+  queue:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    user: "1000:1000"
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - talentbridge
+
+  scheduler:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    user: "1000:1000"
+    command: php artisan schedule:work
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - talentbridge
+
+networks:
+  talentbridge:
+
+volumes:
+  talentbridge_db:
+  caddy_data:
+  caddy_config:

@@ -19,23 +19,42 @@ jobs:
           script: |
             set -e
 
-            cd /var/www/kairox/src
+            cd /var/www/kairox
+
+            echo "--- Backing up database ---"
+            source /var/www/kairox/.env
+            mkdir -p /var/www/kairox/backups
+            docker compose -f docker-compose.prod.yml exec -T db \
+              mysqldump -u root -p"${MYSQL_ROOT_PASSWORD}" kairox_portal \
+              > /var/www/kairox/backups/backup_$(date +%Y%m%d_%H%M%S).sql
+            echo "Backup written to backups/"
 
             echo "--- Pulling latest code ---"
             git pull origin main
 
-            echo "--- Installing dependencies ---"
-            composer install --no-dev --optimize-autoloader --no-interaction
+            echo "--- Building frontend assets ---"
+            docker run --rm \
+              -v /var/www/kairox/src:/app \
+              -w /app \
+              node:20-alpine \
+              sh -c "npm ci --prefer-offline && npm run build"
+
+            echo "--- Installing PHP dependencies ---"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo "--- Clearing stale caches ---"
+            docker compose -f docker-compose.prod.yml exec -T app php artisan optimize:clear
 
             echo "--- Running migrations ---"
-            php artisan migrate --force
+            docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
 
             echo "--- Caching config/routes/views ---"
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+            docker compose -f docker-compose.prod.yml exec -T app php artisan config:cache
+            docker compose -f docker-compose.prod.yml exec -T app php artisan route:cache
+            docker compose -f docker-compose.prod.yml exec -T app php artisan view:cache
 
             echo "--- Restarting queue worker ---"
-            php artisan queue:restart
+            docker compose -f docker-compose.prod.yml restart queue
 
             echo "--- Done ---"

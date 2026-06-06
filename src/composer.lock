@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d5e040e3503c31aae6298d6376f2a56a",
+    "content-hash": "e192c7472c98330b2c8ea36978cbbaca",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -2174,14 +2174,8 @@
             "version": "v1.0.0",
             "source": {
                 "type": "git",
-                "url": "git@github.com:ng-web/likespay.git",
+                "url": "git@github.com-likespay:ng-web/likespay.git",
                 "reference": "b903089b2fc93ad47a6c876199af5611315739c8"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ng-web/likespay/zipball/b903089b2fc93ad47a6c876199af5611315739c8",
-                "reference": "b903089b2fc93ad47a6c876199af5611315739c8",
-                "shasum": ""
             },
             "require": {
                 "illuminate/database": "^10.0|^11.0|^12.0",
@@ -2212,10 +2206,6 @@
                 }
             ],
             "description": "Entitlement-gated payment module for Laravel — WiPay gateway, idempotent activation, access middleware.",
-            "support": {
-                "source": "https://github.com/ng-web/likespay/tree/v1.0.0",
-                "issues": "https://github.com/ng-web/likespay/issues"
-            },
             "time": "2026-05-26T01:34:58+00:00"
         },
         {

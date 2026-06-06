@@ -8,7 +8,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/ng-web/likespay"
+            "url": "git@github.com-likespay:ng-web/likespay.git"
         }
     ],
     "require": {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6264e342a751d8d638216eff95b429ec",
+    "content-hash": "d5e040e3503c31aae6298d6376f2a56a",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -2168,6 +2168,55 @@
                 }
             ],
             "time": "2026-01-15T06:54:53+00:00"
+        },
+        {
+            "name": "likeslocale/likespay",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:ng-web/likespay.git",
+                "reference": "b903089b2fc93ad47a6c876199af5611315739c8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ng-web/likespay/zipball/b903089b2fc93ad47a6c876199af5611315739c8",
+                "reference": "b903089b2fc93ad47a6c876199af5611315739c8",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/database": "^10.0|^11.0|^12.0",
+                "illuminate/http": "^10.0|^11.0|^12.0",
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "php": "^8.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Likeslocale\\LikesPay\\LikesPayServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Likeslocale\\LikesPay\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Likeslocale",
+                    "email": "hello@likeslocale.com"
+                }
+            ],
+            "description": "Entitlement-gated payment module for Laravel — WiPay gateway, idempotent activation, access middleware.",
+            "support": {
+                "source": "https://github.com/ng-web/likespay/tree/v1.0.0",
+                "issues": "https://github.com/ng-web/likespay/issues"
+            },
+            "time": "2026-05-26T01:34:58+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -8735,12 +8784,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
 }

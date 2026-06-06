@@ -1,3 +1,5 @@
 .env
 backups/
 memory/
+node_modules/
+vendor/

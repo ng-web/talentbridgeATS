@@ -38,8 +38,8 @@ final class TestPaymentController extends Controller
             'amount'           => $amount,
             'status'           => Payment::STATUS_PENDING,
             'paid_at'          => null,
+            'is_test'          => true,
             'raw_payload'      => [
-                'is_test'      => true,
                 'created_via'  => 'admin_test_payment',
                 'test_amount'  => $amount,
                 'test_currency'=> $currency,

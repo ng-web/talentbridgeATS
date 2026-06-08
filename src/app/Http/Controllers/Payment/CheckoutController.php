@@ -49,6 +49,13 @@ final class CheckoutController extends Controller
             'query' => $request->query(),
         ]);
 
+        if ($payment->is_test) {
+            Log::info('WiPay callback: test payment', [
+                'payment_id' => $payment->id,
+                'order_id'   => $payment->order_id,
+            ]);
+        }
+
         $gateway = $this->gateways->for($payment->gateway);
         $parsed = $gateway->parseRedirectPayload($request->query());
 

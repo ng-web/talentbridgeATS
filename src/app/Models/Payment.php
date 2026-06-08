@@ -52,6 +52,7 @@ final class Payment extends Model
         'raw_payload',
         'paid_at',
         'entitlement_activated_at',
+        'is_test',
     ];
 
     protected $casts = [
@@ -59,6 +60,7 @@ final class Payment extends Model
         'raw_payload' => 'array',
         'paid_at' => 'datetime',
         'entitlement_activated_at' => 'datetime',
+        'is_test' => 'boolean',
     ];
 
     public function user(): BelongsTo

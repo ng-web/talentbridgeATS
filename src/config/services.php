@@ -44,6 +44,9 @@ return [
         'environment' => env('WIPAY_ENVIRONMENT', 'live'),
         'fee_structure' => env('WIPAY_FEE_STRUCTURE', 'customer_pay'),
         'origin' => env('WIPAY_ORIGIN', 'KairoxExchange'),
+        'test_enabled' => env('WIPAY_TEST_ENABLED', false),
+        'test_amount' => env('WIPAY_TEST_AMOUNT', 115),
+        'test_currency' => env('WIPAY_TEST_CURRENCY', 'JMD'),
     ],
 
 ];

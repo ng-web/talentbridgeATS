@@ -371,4 +371,22 @@
             @endif
         </div>
     </div>
+
+    @if(config('services.wipay.test_enabled'))
+    <div class="mt-10 border-t border-dashed border-gray-200 pt-6">
+        <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Developer Tools</p>
+        <form method="POST" action="{{ route('admin.test-payment.store') }}"
+              onsubmit="return confirm('Run a live WiPay test charge of {{ config('services.wipay.test_currency') }} {{ config('services.wipay.test_amount') }}? This is a real transaction.');">
+            @csrf
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors">
+                <x-heroicon-o-beaker class="w-4 h-4" />
+                WiPay Pipeline Test — {{ config('services.wipay.test_currency') }} {{ config('services.wipay.test_amount') }}
+            </button>
+        </form>
+        @if($errors->has('payment'))
+            <p class="mt-2 text-sm text-red-600">{{ $errors->first('payment') }}</p>
+        @endif
+    </div>
+    @endif
 </x-layouts.portal>

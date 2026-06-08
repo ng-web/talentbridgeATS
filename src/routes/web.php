@@ -145,6 +145,8 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         Route::get('/payment-assistance', [\App\Http\Controllers\Admin\PaymentAssistanceController::class, 'index'])->name('payment-assistance.index');
         Route::patch('/payment-assistance/{assistanceRequest}/status', [\App\Http\Controllers\Admin\PaymentAssistanceController::class, 'updateStatus'])->name('payment-assistance.update-status');
 
+        Route::post('/test-payment', [\App\Http\Controllers\Admin\TestPaymentController::class, 'store'])->name('test-payment.store');
+
         Route::get('/reference-data', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'index'])->name('reference-data.index');
         Route::post('/countries', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'storeCountry'])->name('countries.store');
         Route::delete('/countries/{country}', [\App\Http\Controllers\Admin\ReferenceDataController::class, 'destroyCountry'])->name('countries.destroy');

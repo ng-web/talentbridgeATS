@@ -11,7 +11,7 @@
                 <div>
                     <div class="flex items-center gap-3 mb-4">
                         <x-likeslocale.status-pill tone="brand">
-                            Program
+                            Programs
                         </x-likeslocale.status-pill>
 
                         @if(!empty($program->age_range))
@@ -30,7 +30,8 @@
                     </p>
 
                     @if(!empty($program->benefits))
-                        <ul class="mt-6 space-y-2.5 text-sm text-gray-700">
+                        <p class="mt-6 text-sm font-semibold text-gray-900">You’ll get to:</p>
+                        <ul class="mt-3 space-y-2.5 text-sm text-gray-700">
                             @foreach($program->benefits as $benefit)
                                 <li class="flex items-start gap-2">
                                     <x-heroicon-o-check-circle class="w-4 h-4 mt-0.5 shrink-0 text-[#6f4cb2]" />

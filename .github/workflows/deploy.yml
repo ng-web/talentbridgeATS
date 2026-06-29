@@ -36,7 +36,7 @@ jobs:
             docker run --rm \
               -v /var/www/kairox/src:/app \
               -w /app \
-              node:20-alpine \
+              node:22-alpine \
               sh -c "npm ci --prefer-offline && npm run build"
 
             echo "--- Installing PHP dependencies ---"

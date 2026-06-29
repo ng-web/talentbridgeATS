@@ -1,17 +1,16 @@
-<x-layouts.portal :title="'Pricing'" heading="Programs & Pricing" subheading="Explore our programs, then choose the payment plan that matches your application path." portalRole="{{ auth()->check() && auth()->user()->hasRole('admin') ? 'admin' : (auth()->check() && auth()->user()->hasRole('employer') ? 'employer' : 'jobseeker') }}">
+<x-layouts.portal :title="'Pricing'" heading="Programs & Pricing" subheading="Choose the program that best fits your goals." portalRole="{{ auth()->check() && auth()->user()->hasRole('admin') ? 'admin' : (auth()->check() && auth()->user()->hasRole('employer') ? 'employer' : 'jobseeker') }}">
 
     <div class="mb-8">
         <h2 class="text-xl font-semibold text-gray-800 mb-1">Our Programs</h2>
-        <p class="text-sm text-gray-500">Program descriptions are separate from payment plans and checkout options.</p>
     </div>
 
     @include('public.partials._program_cards', ['programs' => $programs, 'showActions' => false])
 
     @include('public.partials._why_choose_us')
 
-    {{-- Job Seeker Programs --}}
+    {{-- Program payment options --}}
     <div class="mt-12 mb-8">
-        <h2 class="text-xl font-semibold text-gray-800 mb-1">Job Seeker Payment Plans</h2>
+        <h2 class="text-xl font-semibold text-gray-800 mb-1">Program Payment Options</h2>
         <p class="text-sm text-gray-500">One-time programme fee. Access is granted for 12 months from activation.</p>
     </div>
 
@@ -28,7 +27,7 @@
                  style="background:#efe8fb; border-color:#d8caee;">
 
                 <div class="flex items-center gap-3 mb-4">
-                    <x-likeslocale.status-pill tone="brand">Job Seeker</x-likeslocale.status-pill>
+                    <x-likeslocale.status-pill tone="brand">Programs</x-likeslocale.status-pill>
                     
                 </div>
 

@@ -1,14 +1,12 @@
 <?php
 
-namespace Database\Seeders;
-
-use App\Models\Program;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-final class ProgramSeeder extends Seeder
+return new class extends Migration
 {
-    public function run(): void
+    public function up(): void
     {
         $programs = [
             [
@@ -22,6 +20,7 @@ final class ProgramSeeder extends Seeder
                     'Travel during your free time',
                 ],
                 'typical_roles' => 'Hospitality, tourism, retail, amusement parks, attractions.',
+                'fields_available' => null,
                 'display_order' => 1,
             ],
             [
@@ -34,6 +33,7 @@ final class ProgramSeeder extends Seeder
                     'Improve career readiness',
                     'Experience life in a different country',
                 ],
+                'typical_roles' => null,
                 'fields_available' => 'Business, marketing, education, hospitality, IT, and more.',
                 'display_order' => 2,
             ],
@@ -47,6 +47,8 @@ final class ProgramSeeder extends Seeder
                     'Work alongside locals and fellow volunteers',
                     'Discover unique destinations off the beaten path',
                 ],
+                'typical_roles' => null,
+                'fields_available' => null,
                 'display_order' => 3,
             ],
             [
@@ -59,6 +61,8 @@ final class ProgramSeeder extends Seeder
                     'Improve language skills naturally',
                     'Travel during your free time',
                 ],
+                'typical_roles' => null,
+                'fields_available' => null,
                 'display_order' => 4,
             ],
             [
@@ -71,6 +75,8 @@ final class ProgramSeeder extends Seeder
                     'Make lifelong friends from around the world',
                     'Explore your host country during breaks',
                 ],
+                'typical_roles' => null,
+                'fields_available' => null,
                 'display_order' => 5,
             ],
             [
@@ -83,6 +89,8 @@ final class ProgramSeeder extends Seeder
                     'Experience American culture firsthand',
                     'Build valuable skills for your career',
                 ],
+                'typical_roles' => null,
+                'fields_available' => null,
                 'display_order' => 6,
             ],
         ];
@@ -92,21 +100,41 @@ final class ProgramSeeder extends Seeder
             ->all();
 
         foreach ($programs as $program) {
-            Program::updateOrCreate(
-                ['slug' => Str::slug($program['name'])],
-                [
-                    'name' => $program['name'],
-                    'age_range' => $program['age_range'],
-                    'description' => $program['description'],
-                    'benefits' => $program['benefits'],
-                    'typical_roles' => $program['typical_roles'] ?? null,
-                    'fields_available' => $program['fields_available'] ?? null,
-                    'display_order' => $program['display_order'],
-                    'is_active' => true,
-                ]
-            );
+            $slug = Str::slug($program['name']);
+            $values = [
+                'name' => $program['name'],
+                'age_range' => $program['age_range'],
+                'description' => $program['description'],
+                'benefits' => json_encode($program['benefits']),
+                'typical_roles' => $program['typical_roles'],
+                'fields_available' => $program['fields_available'],
+                'display_order' => $program['display_order'],
+                'is_active' => true,
+                'updated_at' => now(),
+            ];
+
+            if (DB::table('programs')->where('slug', $slug)->exists()) {
+                DB::table('programs')->where('slug', $slug)->update($values);
+
+                continue;
+            }
+
+            DB::table('programs')->insert([
+                ...$values,
+                'slug' => $slug,
+                'created_at' => now(),
+            ]);
         }
 
-        Program::whereNotIn('slug', $activeSlugs)->update(['is_active' => false]);
+        DB::table('programs')
+            ->whereNotIn('slug', $activeSlugs)
+            ->update([
+                'is_active' => false,
+                'updated_at' => now(),
+            ]);
     }
-}
+
+    public function down(): void
+    {
+    }
+};

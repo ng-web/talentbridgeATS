@@ -66,13 +66,14 @@ final class JobController extends Controller
             'is_approved' => true,
         ]);
 
-        $employerUser = $job->employer?->user;
+        $employer = $job->employer;
+        $employerUser = $employer?->user;
 
         if ($employerUser) {
             $employerUser->notify(new JobApprovedNotification($job));
 
-            if ($employerUser->email) {
-                Mail::to($employerUser->email)->send(new JobApprovedMail($job));
+            if ($employer?->notificationEmail()) {
+                Mail::to($employer->notificationEmail())->send(new JobApprovedMail($job));
             }
         }
 

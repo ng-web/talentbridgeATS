@@ -17,6 +17,7 @@ final class Employer extends Model
         'logo_path',
         'contact_person',
         'contact_email',
+        'notification_email',
         'phone_company',
         'phone_ext',
         'phone_direct',
@@ -31,5 +32,10 @@ final class Employer extends Model
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
+    }
+
+    public function notificationEmail(): ?string
+    {
+        return $this->notification_email ?: $this->user?->email;
     }
 }

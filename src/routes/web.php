@@ -103,7 +103,11 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
 
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::get('/users/deleted', [\App\Http\Controllers\Admin\UserController::class, 'deleted'])->name('users.deleted');
         Route::get('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+        Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+        Route::patch('/users/{id}/restore', [\App\Http\Controllers\Admin\UserController::class, 'restore'])->name('users.restore');
+        Route::delete('/users/{id}/force', [\App\Http\Controllers\Admin\UserController::class, 'forceDelete'])->name('users.force-delete');
 
         Route::post('/users/{user}/issue-temporary-password', [\App\Http\Controllers\Admin\UserController::class, 'issueTemporaryPassword'])
             ->name('users.issue-temporary-password');

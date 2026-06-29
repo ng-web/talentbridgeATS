@@ -22,7 +22,7 @@
 
     <p style="color:#374151;font-size:15px;line-height:1.6;margin-top:12px;">
         If you have any questions in the meantime, reply to this email or contact us at
-        <a href="mailto:info@kairoxexchange.com" style="color:#6f4cb2;">info@kairoxexchange.com</a>.
+        <a href="mailto:{{ config('mail.admin_address', config('mail.from.address')) }}" style="color:#6f4cb2;">{{ config('mail.admin_address', config('mail.from.address')) }}</a>.
     </p>
 
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;text-align:center;">

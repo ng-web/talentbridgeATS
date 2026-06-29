@@ -32,6 +32,7 @@ final class CompanyController extends Controller
             'website' => ['nullable', 'url', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
+            'notification_email' => ['nullable', 'email', 'max:255'],
             'phone_company' => ['nullable', 'string', 'max:30'],
             'phone_ext'     => ['nullable', 'string', 'max:10'],
             'phone_direct'  => ['nullable', 'string', 'max:30'],

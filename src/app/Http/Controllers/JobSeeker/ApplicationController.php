@@ -154,7 +154,8 @@ final class ApplicationController extends Controller
     private function dispatchApplicationNotifications(Application $application): void
     {
         $jobSeekerUser = $application->jobSeeker?->user;
-        $employerUser = $application->job?->employer?->user;
+        $employer = $application->job?->employer;
+        $employerUser = $employer?->user;
 
         try {
             if ($employerUser) {
@@ -165,8 +166,8 @@ final class ApplicationController extends Controller
                 Mail::to($jobSeekerUser->email)->send(new JobSeekerApplicationSubmittedMail($application));
             }
 
-            if ($employerUser?->email) {
-                Mail::to($employerUser->email)->send(new EmployerNewApplicantMail($application));
+            if ($employer?->notificationEmail()) {
+                Mail::to($employer->notificationEmail())->send(new EmployerNewApplicantMail($application));
             }
         } catch (\Throwable $e) {
             Log::error('Application notification failed', [

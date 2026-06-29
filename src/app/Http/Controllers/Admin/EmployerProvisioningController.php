@@ -46,6 +46,7 @@ final class EmployerProvisioningController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'company_name' => ['required', 'string', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:255'],
+            'notification_email' => ['nullable', 'email', 'max:255'],
             'industry' => ['nullable', 'string', 'max:255'],
             'website' => ['nullable', 'string', 'max:255'],
             'company_description' => ['nullable', 'string'],
@@ -79,6 +80,7 @@ final class EmployerProvisioningController extends Controller
                 'industry' => $validated['industry'] ?? null,
                 'website' => $validated['website'] ?? null,
                 'contact_person' => $validated['contact_person'] ?? $validated['name'],
+                'notification_email' => $validated['notification_email'] ?? null,
                 'billing_status' => 'pending',
             ]);
 

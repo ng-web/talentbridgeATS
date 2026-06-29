@@ -41,6 +41,15 @@
                     </div>
 
                     <div>
+                        <label for="notification_email" class="block text-sm font-medium text-gray-700">Notification Email</label>
+                        <input id="notification_email" name="notification_email" type="email" value="{{ old('notification_email') }}" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                        <p class="mt-2 text-xs text-gray-500">This email receives employer notifications and may be shared across multiple employer profiles. Login emails must remain unique.</p>
+                        @error('notification_email')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
                         <label for="industry" class="block text-sm font-medium text-gray-700">Industry</label>
                         <input id="industry" name="industry" type="text" value="{{ old('industry') }}" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
                         @error('industry')

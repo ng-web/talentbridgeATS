@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\EmployerProvisionedMail;
+use App\Models\AuditLog;
 use App\Models\Entitlement;
 use App\Models\Payment;
 use App\Models\User;
@@ -112,6 +113,94 @@ final class UserController extends Controller
             'recentPayments' => $recentPayments,
             'seekerDocuments' => $seekerDocuments,
         ]);
+    }
+
+    public function deleted(): View
+    {
+        $users = User::onlyTrashed()
+            ->with(['roles', 'employer', 'jobSeeker'])
+            ->latest('deleted_at')
+            ->paginate(20);
+
+        return view('admin.users.deleted', compact('users'));
+    }
+
+    public function destroy(User $user): RedirectResponse
+    {
+        if ($user->is(auth()->user())) {
+            return back()->with('error', 'You cannot move your own account to the recycle bin.');
+        }
+
+        if ($this->isFinalActiveAdmin($user)) {
+            return back()->with('error', 'You cannot move the final active admin account to the recycle bin.');
+        }
+
+        $user->delete();
+
+        $this->audit('user_soft_deleted', $user, [
+            'target_email' => $user->email,
+        ]);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User moved to the recycle bin. They can be restored later.');
+    }
+
+    public function restore(int $id): RedirectResponse
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
+
+        $this->audit('user_restored', $user, [
+            'target_email' => $user->email,
+        ]);
+
+        return redirect()
+            ->route('admin.users.deleted')
+            ->with('success', 'User restored successfully.');
+    }
+
+    public function forceDelete(int $id): RedirectResponse
+    {
+        $user = User::onlyTrashed()
+            ->with(['employer.jobs', 'jobSeeker.applications'])
+            ->findOrFail($id);
+
+        if ((int) $user->id === (int) auth()->id()) {
+            return back()->with('error', 'You cannot permanently delete your own account.');
+        }
+
+        $blockers = $this->forceDeleteBlockers($user);
+
+        if (!empty($blockers)) {
+            $this->audit('user_force_delete_attempted', $user, [
+                'target_email' => $user->email,
+                'blocked_by' => $blockers,
+            ]);
+
+            return back()->with('error', 'Permanent deletion is blocked because this user has: ' . implode(', ', $blockers) . '.');
+        }
+
+        $target = [
+            'target_user_id' => $user->id,
+            'target_email' => $user->email,
+            'target_name' => $user->name,
+        ];
+
+        $user->syncRoles([]);
+        $user->forceDelete();
+
+        AuditLog::create([
+            'actor_user_id' => auth()->id(),
+            'action' => 'user_force_deleted',
+            'entity_type' => User::class,
+            'entity_id' => $target['target_user_id'],
+            'meta' => $target,
+        ]);
+
+        return redirect()
+            ->route('admin.users.deleted')
+            ->with('success', 'User permanently deleted.');
     }
 
     public function issueTemporaryPassword(User $user): RedirectResponse
@@ -247,5 +336,57 @@ final class UserController extends Controller
         ]);
 
         return back()->with('success', 'Access revoked successfully.');
+    }
+
+    private function isFinalActiveAdmin(User $user): bool
+    {
+        return $user->hasRole('admin')
+            && User::role('admin')
+                ->whereKeyNot($user->id)
+                ->count() === 0;
+    }
+
+    private function forceDeleteBlockers(User $user): array
+    {
+        $blockers = [];
+
+        if ($user->payments()->exists()) {
+            $blockers[] = 'payments';
+        }
+
+        if ($user->entitlements()->exists()) {
+            $blockers[] = 'entitlements';
+        }
+
+        if ($user->jobSeeker?->applications()->exists()) {
+            $blockers[] = 'applications';
+        }
+
+        if ($user->employer?->jobs()->exists()) {
+            $blockers[] = 'employer jobs';
+        }
+
+        if (
+            $user->auditLogs()->exists()
+            || AuditLog::query()
+                ->where('entity_type', User::class)
+                ->where('entity_id', $user->id)
+                ->exists()
+        ) {
+            $blockers[] = 'audit logs';
+        }
+
+        return $blockers;
+    }
+
+    private function audit(string $action, User $user, array $meta = []): void
+    {
+        AuditLog::create([
+            'actor_user_id' => auth()->id(),
+            'action' => $action,
+            'entity_type' => User::class,
+            'entity_id' => $user->id,
+            'meta' => $meta,
+        ]);
     }
 }

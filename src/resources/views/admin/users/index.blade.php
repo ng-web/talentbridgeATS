@@ -6,9 +6,15 @@
                     <h3 class="text-xl font-semibold text-gray-900">Search & Filter Users</h3>
                     <p class="mt-1 text-sm text-gray-500">Find employers, job seekers, and admins by identity, company, access, or password status.</p>
                 </div>
-                <x-likeslocale.button :href="route('admin.employers.create')" variant="accent">
-                    Add Employer / Sponsor
-                </x-likeslocale.button>
+                <div class="flex flex-wrap gap-3">
+                    <x-likeslocale.button :href="route('admin.users.deleted')" variant="secondary">
+                        Recycle Bin
+                    </x-likeslocale.button>
+
+                    <x-likeslocale.button :href="route('admin.employers.create')" variant="accent">
+                        Add Employer / Sponsor
+                    </x-likeslocale.button>
+                </div>
             </div>
 
             <form id="user-filter-form" method="GET" action="{{ route('admin.users.index') }}"

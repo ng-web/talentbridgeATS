@@ -178,7 +178,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 border-t border-gray-100 pt-5">
+                        <div class="mt-6 border-t border-gray-100 pt-5">
                         <h4 class="text-base font-semibold text-gray-900">
                             Credential Actions
                         </h4>
@@ -235,6 +235,28 @@
                             @endif
                         </div>
                     </div>
+
+                    <div class="mt-6 border-t border-red-100 pt-5">
+                        <h4 class="text-base font-semibold text-red-700">
+                            Danger Zone
+                        </h4>
+
+                        <p class="mt-1 text-sm text-gray-500">
+                            Move this user to the recycle bin. Their records are preserved and the account can be restored later.
+                        </p>
+
+                        <form method="POST"
+                              action="{{ route('admin.users.destroy', $user) }}"
+                              class="mt-4"
+                              onsubmit="return confirm('Move {{ addslashes($user->name) }} to the recycle bin? They can be restored later.');">
+                            @csrf
+                            @method('DELETE')
+
+                            <x-likeslocale.button type="submit" variant="secondary" class="w-full justify-center">
+                                Move to Recycle Bin
+                            </x-likeslocale.button>
+                        </form>
+                    </div>
                 </div>
 
                 @if($role === 'employer' && $user->employer)
@@ -269,6 +291,13 @@
                                 <p class="font-medium text-gray-900">Contact Person</p>
                                 <p class="mt-1 text-gray-600">
                                     {{ $user->employer->contact_person ?: 'Not provided' }}
+                                </p>
+                            </div>
+
+                            <div class="py-3 first:pt-0 last:pb-0">
+                                <p class="font-medium text-gray-900">Notification Email</p>
+                                <p class="mt-1 text-gray-600 break-all">
+                                    {{ $user->employer->notificationEmail() ?: 'Not provided' }}
                                 </p>
                             </div>
                         </div>

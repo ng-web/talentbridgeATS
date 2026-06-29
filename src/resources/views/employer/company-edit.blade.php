@@ -119,6 +119,14 @@
                                     :value="old('contact_email', $employer->contact_email)" />
                                 <x-input-error :messages="$errors->get('contact_email')" class="mt-2" />
                             </div>
+
+                            <div>
+                                <x-input-label for="notification_email" value="Notification Email" />
+                                <x-text-input id="notification_email" name="notification_email" type="email" class="mt-1 block w-full"
+                                    :value="old('notification_email', $employer->notification_email)" />
+                                <p class="mt-2 text-xs text-gray-500">This email receives employer notifications and may be shared across multiple employer profiles. Login emails must remain unique.</p>
+                                <x-input-error :messages="$errors->get('notification_email')" class="mt-2" />
+                            </div>
                         </div>
                     </div>
 

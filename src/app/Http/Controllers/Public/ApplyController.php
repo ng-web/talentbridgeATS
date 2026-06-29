@@ -11,6 +11,8 @@ final class ApplyController extends Controller
     public function __invoke(): View
     {
         $programs = Program::query()
+            ->where('is_active', true)
+            ->orderBy('display_order')
             ->orderBy('name')
             ->get();
 

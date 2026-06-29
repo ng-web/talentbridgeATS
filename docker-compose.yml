@@ -46,7 +46,7 @@ services:
       - talentbridge
 
   node:
-    image: node:20-alpine
+    image: node:22-alpine
     user: "1000:1000"
     working_dir: /var/www/html
     volumes:

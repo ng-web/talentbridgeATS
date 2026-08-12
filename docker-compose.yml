@@ -15,9 +15,15 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
-    user: "1000:1000"
+      args:
+        APP_UID: "${LOCAL_UID:-1000}"
+    user: "${LOCAL_UID:-1000}:1000"
+    environment:
+      HOME: /home/www-data
+      COMPOSER_HOME: /home/www-data/.composer
     volumes:
       - ./src:/var/www/html
+      - ${HOME}/.ssh:/home/www-data/.ssh:ro
     depends_on:
       - db
     networks:
@@ -47,7 +53,10 @@ services:
 
   node:
     image: node:22-alpine
-    user: "1000:1000"
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+      npm_config_cache: /tmp/.npm
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html

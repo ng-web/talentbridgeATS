@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5178c4e10c1ecbcab67f98cea5cb6499",
+    "content-hash": "ef19da9a661b3f2a790f2cf1fe7b4df1",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -2174,7 +2174,7 @@
             "version": "v1.0.0",
             "source": {
                 "type": "git",
-                "url": "git@github.com-likespay:ng-web/likespay.git",
+                "url": "git@github.com:ng-web/likespay.git",
                 "reference": "b903089b2fc93ad47a6c876199af5611315739c8"
             },
             "require": {
@@ -8831,12 +8831,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.6.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
 }

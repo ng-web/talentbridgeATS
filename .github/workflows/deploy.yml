@@ -1,9 +1,7 @@
 name: Deploy to Production
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,25 +10,47 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          LIKESPAY_GITHUB_TOKEN: ${{ secrets.LIKESPAY_GITHUB_TOKEN }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: LIKESPAY_GITHUB_TOKEN
           script: |
             set -e
 
             cd /var/www/kairox
 
+            echo "--- Deployment preflight ---"
+
+            if [ -z "${LIKESPAY_GITHUB_TOKEN}" ]; then
+              echo "ERROR: LIKESPAY_GITHUB_TOKEN is missing."
+              exit 1
+            fi
+
+            echo "Current production commit:"
+            git log -1 --oneline
+
             echo "--- Backing up database ---"
             source /var/www/kairox/.env
             mkdir -p /var/www/kairox/backups
+
             docker compose -f docker-compose.prod.yml exec -T db \
-              mysqldump -u root -p"${MYSQL_ROOT_PASSWORD}" kairox_portal \
+              mysqldump \
+              -u root \
+              -p"${MYSQL_ROOT_PASSWORD}" \
+              "${DB_DATABASE:-kairox_portal}" \
               > /var/www/kairox/backups/backup_$(date +%Y%m%d_%H%M%S).sql
-            echo "Backup written to backups/"
+
+            echo "Database backup completed."
 
             echo "--- Pulling latest code ---"
-            git pull origin main
+            git fetch origin main
+            git pull --ff-only origin main
+
+            echo "New production commit:"
+            git log -1 --oneline
 
             echo "--- Building frontend assets ---"
             docker run --rm \
@@ -40,21 +60,36 @@ jobs:
               sh -c "npm ci --prefer-offline && npm run build"
 
             echo "--- Installing PHP dependencies ---"
-            docker compose -f docker-compose.prod.yml exec -T app \
-              composer install --no-dev --optimize-autoloader --no-interaction
+            docker compose -f docker-compose.prod.yml exec -T \
+              -e COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"${LIKESPAY_GITHUB_TOKEN}\"}}" \
+              app composer install \
+              --no-dev \
+              --prefer-dist \
+              --optimize-autoloader \
+              --no-interaction
 
-            echo "--- Clearing stale caches ---"
-            docker compose -f docker-compose.prod.yml exec -T app php artisan optimize:clear
+            echo "--- Clearing stale Laravel caches ---"
+            docker compose -f docker-compose.prod.yml exec -T \
+              app php artisan optimize:clear
 
-            echo "--- Running migrations ---"
-            docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
+            echo "--- Running database migrations ---"
+            docker compose -f docker-compose.prod.yml exec -T \
+              app php artisan migrate --force
 
-            echo "--- Caching config/routes/views ---"
-            docker compose -f docker-compose.prod.yml exec -T app php artisan config:cache
-            docker compose -f docker-compose.prod.yml exec -T app php artisan route:cache
-            docker compose -f docker-compose.prod.yml exec -T app php artisan view:cache
+            echo "--- Caching production configuration ---"
+            docker compose -f docker-compose.prod.yml exec -T \
+              app php artisan config:cache
+
+            docker compose -f docker-compose.prod.yml exec -T \
+              app php artisan route:cache
+
+            docker compose -f docker-compose.prod.yml exec -T \
+              app php artisan view:cache
 
             echo "--- Restarting queue worker ---"
             docker compose -f docker-compose.prod.yml restart queue
 
-            echo "--- Done ---"
+            echo "--- Production status ---"
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "--- Deployment complete ---"

@@ -59,9 +59,17 @@ jobs:
               node:22-alpine \
               sh -c "npm ci --prefer-offline && npm run build"
 
+                        echo "--- Preparing Composer directories ---"
+            docker compose -f docker-compose.prod.yml exec -T -u 0 \
+              app sh -lc '
+                mkdir -p /tmp/composer-cache /var/www/html/vendor
+                chown -R 1000:1000 /tmp/composer-cache /var/www/html/vendor
+              '
+
             echo "--- Installing PHP dependencies ---"
             docker compose -f docker-compose.prod.yml exec -T \
               -e COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"${LIKESPAY_GITHUB_TOKEN}\"}}" \
+              -e COMPOSER_CACHE_DIR=/tmp/composer-cache \
               app composer install \
               --no-dev \
               --prefer-dist \

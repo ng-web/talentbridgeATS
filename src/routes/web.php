@@ -124,6 +124,9 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         Route::delete('/users/{user}/revoke-access/{type}', [\App\Http\Controllers\Admin\UserController::class, 'revokeAccess'])
             ->name('users.revoke-access');
 
+        Route::patch('/users/{user}/program', [\App\Http\Controllers\Admin\UserController::class, 'updateProgram'])
+            ->name('users.update-program');
+
         Route::get('/jobs', [AdminJobController::class, 'index'])->name('jobs.index');
         Route::patch('/jobs/{job}/approve', [AdminJobController::class, 'approve'])->name('jobs.approve');
         Route::patch('/jobs/{job}/pending', [AdminJobController::class, 'setPending'])->name('jobs.pending');

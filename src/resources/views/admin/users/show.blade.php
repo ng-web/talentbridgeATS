@@ -126,12 +126,23 @@
                     </x-likeslocale.button>
 
                     <x-likeslocale.button :href="route('admin.entitlements.index', ['q' => $user->email])">
-                        View Entitlements
+                        Manage Access
                     </x-likeslocale.button>
 
                     <x-likeslocale.button :href="route('admin.payments.index', ['q' => $user->email])" variant="accent">
-                        View Payments
+                        Payments
                     </x-likeslocale.button>
+
+                    <form method="POST"
+                          action="{{ route('admin.users.destroy', $user) }}"
+                          onsubmit="return confirm('Removing this user will move them to the Recycle Bin. Their payment, application, and account history will be preserved and the account can be restored later.');">
+                        @csrf
+                        @method('DELETE')
+
+                        <x-likeslocale.button type="submit" variant="secondary">
+                            Move to Recycle Bin
+                        </x-likeslocale.button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -152,6 +163,18 @@
                         <div class="py-3 first:pt-0 last:pb-0">
                             <p class="font-medium text-gray-900">Email Address</p>
                             <p class="mt-1 text-gray-600 break-all">{{ $user->email }}</p>
+                        </div>
+
+                        <div class="py-3 first:pt-0 last:pb-0">
+                            <p class="font-medium text-gray-900">Telephone</p>
+                            <p class="mt-1 text-gray-600">
+                                {{ $user->jobSeeker?->phone ?: $user->employer?->phone_direct ?: $user->employer?->phone_company ?: 'Not provided' }}
+                            </p>
+                        </div>
+
+                        <div class="py-3 first:pt-0 last:pb-0">
+                            <p class="font-medium text-gray-900">Account Status</p>
+                            <div class="mt-1"><x-likeslocale.status-pill tone="success">Active</x-likeslocale.status-pill></div>
                         </div>
 
                         <div class="py-3 first:pt-0 last:pb-0">
@@ -236,27 +259,6 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 border-t border-red-100 pt-5">
-                        <h4 class="text-base font-semibold text-red-700">
-                            Danger Zone
-                        </h4>
-
-                        <p class="mt-1 text-sm text-gray-500">
-                            Move this user to the recycle bin. Their records are preserved and the account can be restored later.
-                        </p>
-
-                        <form method="POST"
-                              action="{{ route('admin.users.destroy', $user) }}"
-                              class="mt-4"
-                              onsubmit="return confirm('Move {{ addslashes($user->name) }} to the recycle bin? They can be restored later.');">
-                            @csrf
-                            @method('DELETE')
-
-                            <x-likeslocale.button type="submit" variant="secondary" class="w-full justify-center">
-                                Move to Recycle Bin
-                            </x-likeslocale.button>
-                        </form>
-                    </div>
                 </div>
 
                 @if($role === 'employer' && $user->employer)
@@ -311,6 +313,43 @@
                         </h3>
 
                         <div class="mt-5 divide-y divide-gray-100 text-sm">
+                            <div class="py-3 first:pt-0 last:pb-0">
+                                <p class="font-medium text-gray-900">Current Program</p>
+                                <p class="mt-1 text-gray-600">{{ $user->jobSeeker->program?->name ?: 'Not selected' }}</p>
+
+                                <form method="POST"
+                                      action="{{ route('admin.users.update-program', $user) }}"
+                                      class="mt-3 flex flex-col gap-2"
+                                      onsubmit="const current = '{{ $user->jobSeeker->program_id }}'; const next = this.elements.program_id.value; if (current === '' || next === current) return true; return confirm(next === '' ? 'Clear this Program association? The applicant may still have payments, access, and applications. Those records will not be changed.' : 'Change this Program association? Existing payments, access, and applications will not be changed.');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <select name="program_id" class="block w-full rounded-2xl border-gray-300 shadow-sm">
+                                        <option value="" @selected((string) old('program_id', $user->jobSeeker->program_id) === '')>Not selected</option>
+                                        @if($user->jobSeeker->program && ! $user->jobSeeker->program->is_active)
+                                            <option value="{{ $user->jobSeeker->program_id }}" selected>
+                                                {{ $user->jobSeeker->program->name }} (Inactive)
+                                            </option>
+                                        @endif
+                                        @foreach($programs as $program)
+                                            <option value="{{ $program->id }}" @selected((string) old('program_id', $user->jobSeeker->program_id) === (string) $program->id)>
+                                                {{ $program->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('program_id')
+                                        <p class="text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                    @if($user->jobSeeker->program_id)
+                                        <p class="text-xs text-amber-700">
+                                            Changing or clearing this association does not alter existing payments, access, or applications.
+                                        </p>
+                                    @endif
+                                    <x-likeslocale.button type="submit" variant="secondary" class="w-full justify-center">
+                                        Update Program
+                                    </x-likeslocale.button>
+                                </form>
+                            </div>
+
                             <div class="py-3 first:pt-0 last:pb-0">
                                 <p class="font-medium text-gray-900">Profile Completion</p>
 
@@ -553,6 +592,40 @@
                     </div>
                 @endif
 
+                @if($role === 'job_seeker' && $user->jobSeeker)
+                    @php $latestApplication = $user->jobSeeker->latestApplication; @endphp
+                    <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">Applications</h3>
+                                <p class="mt-1 text-sm text-gray-500">Applicant activity and latest submission.</p>
+                            </div>
+                            <x-likeslocale.status-pill tone="brand">
+                                {{ $user->jobSeeker->applications_count }} total
+                            </x-likeslocale.status-pill>
+                        </div>
+
+                        @if($latestApplication)
+                            <div class="mt-6 rounded-2xl border border-gray-200 p-5">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-semibold text-gray-900">{{ $latestApplication->job?->title ?: 'Job unavailable' }}</p>
+                                    <x-likeslocale.status-pill :tone="\App\Models\Application::toneFor($latestApplication->status)">
+                                        {{ \App\Models\Application::labelFor($latestApplication->status) }}
+                                    </x-likeslocale.status-pill>
+                                </div>
+                                <div class="mt-2 text-sm text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+                                    <span><span class="font-medium text-gray-700">Employer:</span> {{ $latestApplication->job?->employer?->company_name ?: 'Not available' }}</span>
+                                    <span><span class="font-medium text-gray-700">Applied:</span> {{ $latestApplication->applied_at?->format('M d, Y g:i A') ?: '—' }}</span>
+                                </div>
+                            </div>
+                        @else
+                            <div class="mt-6 rounded-2xl bg-gray-50 border border-gray-100 p-5 text-sm text-gray-500 text-center">
+                                No applications found for this user.
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
                     <div class="flex items-center justify-between gap-4">
                         <div>
@@ -615,7 +688,7 @@
 
                                             @if($payment->plan?->name)
                                                 <div class="mt-2 text-sm text-gray-600">
-                                                    Plan:
+                                                    Payment Plan:
                                                     <span class="font-medium">
                                                         {{ $payment->plan->name }}
                                                     </span>

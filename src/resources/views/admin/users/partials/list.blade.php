@@ -9,8 +9,10 @@
             @php
                 $roleLabel         = $user->primaryRoleLabel();
                 $companyName       = $user->employer?->company_name;
+                $jobSeeker        = $user->jobSeeker;
                 $accessLabel       = $user->accessSummaryLabel();
                 $accessTone        = $user->accessSummaryTone();
+                $latestPayment     = $user->latestPaymentRecord();
                 $latestPaymentLabel = $user->latestPaymentLabel();
                 $latestPaymentTone  = $user->latestPaymentTone();
             @endphp
@@ -31,12 +33,19 @@
                         <div class="border-t border-gray-100 mt-3 pt-2.5">
                             <div class="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
                                 <span class="text-gray-500"><x-heroicon-o-envelope class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->email }}</span>
-                                @if($companyName)
+                                @if($jobSeeker)
+                                    <span class="{{ $jobSeeker->phone ? '' : 'text-gray-400' }}">
+                                        <x-heroicon-o-phone class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $jobSeeker->phone ?: 'No phone' }}
+                                    </span>
+                                    <span class="{{ $jobSeeker->program ? '' : 'text-gray-400' }}">
+                                        <x-heroicon-o-academic-cap class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $jobSeeker->program?->name ?: 'Not selected' }}
+                                    </span>
+                                @elseif($companyName)
                                     <span><x-heroicon-o-building-office class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $companyName }}</span>
                                 @endif
                                 <span class="text-gray-500"><x-heroicon-o-calendar-days class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->created_at?->format('M d, Y') }}</span>
-                                @if($user->latestPaymentRecord())
-                                    <span><x-heroicon-o-banknotes class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $user->latestPaymentRecord()->currency }} {{ number_format((float) $user->latestPaymentRecord()->amount, 2) }}</span>
+                                @if($latestPayment)
+                                    <span><x-heroicon-o-banknotes class="w-3.5 h-3.5 inline-block mr-0.5 -mt-0.5" />{{ $latestPayment->currency }} {{ number_format((float) $latestPayment->amount, 2) }}</span>
                                 @endif
                             </div>
                         </div>

@@ -3,3 +3,4 @@ backups/
 memory/
 node_modules/
 vendor/
+.DS_Store

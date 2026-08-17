@@ -121,6 +121,31 @@
                     @csrf
                     @method('PATCH')
 
+                    <div class="rounded-2xl border border-violet-100 bg-violet-50/50 p-5">
+                        <label for="program_id" class="block text-sm font-medium text-gray-900">Current Program</label>
+
+                        @if($jobSeeker->program)
+                            <p class="mt-2 font-semibold text-[#6f4cb2]">{{ $jobSeeker->program->name }}</p>
+                            <p class="mt-1 text-xs text-gray-500">Contact Kairox or an administrator if this Program needs to be corrected.</p>
+                            <input type="hidden" name="program_id" value="{{ $jobSeeker->program_id }}">
+                        @else
+                            <select id="program_id" name="program_id" required
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Select a Program</option>
+                                @foreach($programs as $program)
+                                    <option value="{{ $program->id }}" @selected((string) old('program_id') === (string) $program->id)>
+                                        {{ $program->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">Once selected, an administrator must make future corrections.</p>
+                        @endif
+
+                        @error('program_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     {{-- Contact info --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>

@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class JobSeeker extends Model
 {
     protected $fillable = [
         'user_id',
+        'program_id',
         'date_of_birth',
         'location',
         'phone',
@@ -33,9 +35,19 @@ final class JobSeeker extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
+    }
+
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
+    }
+
+    public function latestApplication(): HasOne
+    {
+        return $this->hasOne(Application::class)->latestOfMany('applied_at');
     }
 
     public function documents(): HasMany

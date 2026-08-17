@@ -31,10 +31,32 @@
                     <option value="job_seeker" @selected(($filters['role'] ?? '') === 'job_seeker')>Job Seeker</option>
                 </select>
 
+                <select id="user-program" name="program" class="w-full sm:w-48 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                    <option value="">All Programs</option>
+                    @foreach($programs as $program)
+                        <option value="{{ $program->id }}" @selected((string) ($filters['program'] ?? '') === (string) $program->id)>
+                            {{ $program->name }}
+                        </option>
+                    @endforeach
+                </select>
+
                 <select id="user-access" name="access" class="w-full sm:w-40 shrink-0 rounded-2xl border-gray-300 shadow-sm">
                     <option value="">All access</option>
                     <option value="active"   @selected(($filters['access'] ?? '') === 'active')>Has Active Access</option>
-                    <option value="inactive" @selected(($filters['access'] ?? '') === 'inactive')>No Active Access</option>
+                    <option value="inactive" @selected(($filters['access'] ?? '') === 'inactive')>Inactive</option>
+                    <option value="expired" @selected(($filters['access'] ?? '') === 'expired')>Expired</option>
+                    <option value="revoked" @selected(($filters['access'] ?? '') === 'revoked')>Revoked</option>
+                    <option value="no_access" @selected(($filters['access'] ?? '') === 'no_access')>No Access</option>
+                </select>
+
+                <select id="user-payment" name="payment" class="w-full sm:w-44 shrink-0 rounded-2xl border-gray-300 shadow-sm">
+                    <option value="">All payments</option>
+                    @foreach(\App\Models\Payment::STATUSES as $status)
+                        <option value="{{ $status }}" @selected(($filters['payment'] ?? '') === $status)>
+                            {{ \App\Models\Payment::labelFor($status) }}
+                        </option>
+                    @endforeach
+                    <option value="no_payment" @selected(($filters['payment'] ?? '') === 'no_payment')>No Payment</option>
                 </select>
 
                 <select id="user-pw" name="password_change" class="w-full sm:w-48 shrink-0 rounded-2xl border-gray-300 shadow-sm">

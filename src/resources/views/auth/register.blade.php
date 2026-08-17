@@ -24,6 +24,22 @@
         <input type="hidden" name="role" value="job_seeker">
 
         <div>
+            <x-input-label for="program" :value="__('Current Program')" />
+            <select id="program" name="program" required
+                    class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
+                <option value="">Select a Program</option>
+                @foreach($programs as $program)
+                    <option value="{{ $program->slug }}"
+                        @selected(old('program', $selectedProgram?->slug) === $program->slug)>
+                        {{ $program->name }}
+                    </option>
+                @endforeach
+            </select>
+            <x-input-error :messages="$errors->get('program')" class="mt-2" />
+            <p class="mt-1 text-xs text-gray-400">Choose the Kairox Program you are currently pursuing.</p>
+        </div>
+
+        <div>
             <x-input-label for="password" :value="__('Password')" />
             <x-text-input id="password" class="mt-1 block w-full rounded-2xl"
                           type="password"

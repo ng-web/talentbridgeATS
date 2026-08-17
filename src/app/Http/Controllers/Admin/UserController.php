@@ -4,16 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\EmployerProvisionedMail;
+use App\Models\AdminOverride;
 use App\Models\AuditLog;
 use App\Models\Entitlement;
 use App\Models\Payment;
+use App\Models\PaymentAssistanceRequest;
+use App\Models\Program;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -23,49 +28,44 @@ final class UserController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
         $role = trim((string) $request->query('role', ''));
+        $program = trim((string) $request->query('program', ''));
         $access = trim((string) $request->query('access', ''));
+        $payment = trim((string) $request->query('payment', ''));
         $passwordChange = trim((string) $request->query('password_change', ''));
 
         $users = User::query()
             ->with([
                 'roles',
                 'employer',
-                'jobSeeker',
-                'entitlements' => fn ($query) => $query->latest(),
-                'payments' => fn ($query) => $query->latest(),
+                'jobSeeker.program',
+                'currentEntitlement',
+                'latestEntitlement',
+                'latestPayment.plan',
             ])
             ->when($q !== '', function (Builder $query) use ($q) {
                 $query->where(function (Builder $subQuery) use ($q) {
                     $subQuery
-                        ->where('name', 'like', '%' . $q . '%')
-                        ->orWhere('email', 'like', '%' . $q . '%')
+                        ->where('name', 'like', '%'.$q.'%')
+                        ->orWhere('email', 'like', '%'.$q.'%')
                         ->orWhereHas('employer', function (Builder $employerQuery) use ($q) {
-                            $employerQuery->where('company_name', 'like', '%' . $q . '%');
+                            $employerQuery->where('company_name', 'like', '%'.$q.'%');
                         });
                 });
             })
             ->when($role !== '', fn (Builder $query) => $query->role($role))
-            ->when($access !== '', function (Builder $query) use ($access) {
-                if ($access === 'active') {
-                    $query->whereHas('entitlements', function (Builder $entitlementQuery) {
-                        $entitlementQuery
-                            ->where('status', Entitlement::STATUS_ACTIVE)
-                            ->where(function (Builder $dateQuery) {
-                                $dateQuery->whereNull('expires_at')
-                                    ->orWhere('expires_at', '>', now());
-                            });
-                    });
+            ->when($program !== '', function (Builder $query) use ($program) {
+                $query->whereHas('jobSeeker', fn (Builder $jobSeekerQuery) => $jobSeekerQuery->where('program_id', $program));
+            })
+            ->when($access !== '', fn (Builder $query) => $query->whereAccessSummary($access))
+            ->when($payment !== '', function (Builder $query) use ($payment) {
+                if ($payment === 'no_payment') {
+                    $query->whereDoesntHave('payments');
+
+                    return;
                 }
 
-                if ($access === 'inactive') {
-                    $query->whereDoesntHave('entitlements', function (Builder $entitlementQuery) {
-                        $entitlementQuery
-                            ->where('status', Entitlement::STATUS_ACTIVE)
-                            ->where(function (Builder $dateQuery) {
-                                $dateQuery->whereNull('expires_at')
-                                    ->orWhere('expires_at', '>', now());
-                            });
-                    });
+                if (in_array($payment, Payment::STATUSES, true)) {
+                    $query->whereHas('latestPayment', fn (Builder $paymentQuery) => $paymentQuery->where('status', $payment));
                 }
             })
             ->when($passwordChange !== '', function (Builder $query) use ($passwordChange) {
@@ -82,8 +82,9 @@ final class UserController extends Controller
             ->withQueryString();
 
         $data = [
-            'users'   => $users,
-            'filters' => compact('q', 'role', 'access', 'passwordChange'),
+            'users' => $users,
+            'programs' => Program::query()->where('is_active', true)->orderBy('name')->get(),
+            'filters' => compact('q', 'role', 'program', 'access', 'payment', 'passwordChange'),
         ];
 
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
@@ -99,9 +100,13 @@ final class UserController extends Controller
             'roles',
             'employer',
             'jobSeeker.documents',
+            'jobSeeker.program',
+            'jobSeeker.latestApplication.job.employer',
             'entitlements' => fn ($query) => $query->latest(),
-            'payments.plan' => fn ($query) => $query->latest(),
+            'payments' => fn ($query) => $query->with('plan')->latest(),
         ]);
+
+        $user->jobSeeker?->loadCount('applications');
 
         $activeEntitlements = $user->entitlements->filter(fn (Entitlement $entitlement) => $entitlement->isActive());
         $recentPayments = $user->payments->take(5);
@@ -112,6 +117,7 @@ final class UserController extends Controller
             'activeEntitlements' => $activeEntitlements,
             'recentPayments' => $recentPayments,
             'seekerDocuments' => $seekerDocuments,
+            'programs' => Program::query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -127,12 +133,12 @@ final class UserController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
-        if ($user->is(auth()->user())) {
-            return back()->with('error', 'You cannot move your own account to the recycle bin.');
-        }
-
         if ($this->isFinalActiveAdmin($user)) {
             return back()->with('error', 'You cannot move the final active admin account to the recycle bin.');
+        }
+
+        if ($user->is(auth()->user())) {
+            return back()->with('error', 'You cannot move your own account to the recycle bin.');
         }
 
         $user->delete();
@@ -172,13 +178,13 @@ final class UserController extends Controller
 
         $blockers = $this->forceDeleteBlockers($user);
 
-        if (!empty($blockers)) {
+        if (! empty($blockers)) {
             $this->audit('user_force_delete_attempted', $user, [
                 'target_email' => $user->email,
                 'blocked_by' => $blockers,
             ]);
 
-            return back()->with('error', 'Permanent deletion is blocked because this user has: ' . implode(', ', $blockers) . '.');
+            return back()->with('error', 'Permanent deletion is blocked because this user has: '.implode(', ', $blockers).'.');
         }
 
         $target = [
@@ -187,16 +193,25 @@ final class UserController extends Controller
             'target_name' => $user->name,
         ];
 
-        $user->syncRoles([]);
-        $user->forceDelete();
+        DB::transaction(function () use ($user, $target): void {
+            // Notifications and sessions are ephemeral operational records and are removed deliberately.
+            $user->notifications()->delete();
+            DB::connection(config('session.connection'))
+                ->table((string) config('session.table', 'sessions'))
+                ->where('user_id', $user->id)
+                ->delete();
 
-        AuditLog::create([
-            'actor_user_id' => auth()->id(),
-            'action' => 'user_force_deleted',
-            'entity_type' => User::class,
-            'entity_id' => $target['target_user_id'],
-            'meta' => $target,
-        ]);
+            $user->syncRoles([]);
+            $user->forceDelete();
+
+            AuditLog::create([
+                'actor_user_id' => auth()->id(),
+                'action' => 'user_force_deleted',
+                'entity_type' => User::class,
+                'entity_id' => $target['target_user_id'],
+                'meta' => $target,
+            ]);
+        });
 
         return redirect()
             ->route('admin.users.deleted')
@@ -278,7 +293,7 @@ final class UserController extends Controller
     public function grantAccess(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'type' => ['required', 'string', 'in:' . implode(',', Entitlement::TYPES)],
+            'type' => ['required', 'string', 'in:'.implode(',', Entitlement::TYPES)],
             'expires_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -309,7 +324,7 @@ final class UserController extends Controller
 
     public function revokeAccess(User $user, string $type): RedirectResponse
     {
-        if (!in_array($type, Entitlement::TYPES, true)) {
+        if (! in_array($type, Entitlement::TYPES, true)) {
             abort(404);
         }
 
@@ -318,14 +333,14 @@ final class UserController extends Controller
             ->where('type', $type)
             ->first();
 
-        if (!$entitlement) {
+        if (! $entitlement) {
             return back()->with('error', 'No matching entitlement was found for this user.');
         }
 
         $entitlement->update([
             'status' => Entitlement::STATUS_REVOKED,
             'expires_at' => now(),
-            'notes' => trim(($entitlement->notes ? $entitlement->notes . "\n" : '') . 'Revoked from admin user detail page.'),
+            'notes' => trim(($entitlement->notes ? $entitlement->notes."\n" : '').'Revoked from admin user detail page.'),
         ]);
 
         Log::warning('Access revoked from user detail page', [
@@ -336,6 +351,50 @@ final class UserController extends Controller
         ]);
 
         return back()->with('success', 'Access revoked successfully.');
+    }
+
+    public function updateProgram(Request $request, User $user): RedirectResponse
+    {
+        $jobSeeker = $user->jobSeeker;
+
+        abort_unless($jobSeeker, 404);
+
+        $validated = $request->validate([
+            'program_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('programs', 'id')->where(function ($query) use ($jobSeeker) {
+                    $query->where('is_active', true);
+
+                    if ($jobSeeker->program_id) {
+                        $query->orWhere('id', $jobSeeker->program_id);
+                    }
+                }),
+            ],
+        ]);
+
+        $oldProgramId = $jobSeeker->program_id;
+        $newProgramId = $validated['program_id'] ?? null;
+
+        if ((int) $oldProgramId === (int) $newProgramId) {
+            return back()->with('success', 'Applicant Program is unchanged.');
+        }
+
+        $jobSeeker->update(['program_id' => $newProgramId]);
+
+        $action = match (true) {
+            $oldProgramId === null => 'job_seeker_program_assigned',
+            $newProgramId === null => 'job_seeker_program_cleared',
+            default => 'job_seeker_program_changed',
+        };
+
+        $this->audit($action, $user, [
+            'target_email' => $user->email,
+            'old_program_id' => $oldProgramId,
+            'new_program_id' => $newProgramId,
+        ]);
+
+        return back()->with('success', 'Applicant Program updated successfully.');
     }
 
     private function isFinalActiveAdmin(User $user): bool
@@ -362,8 +421,27 @@ final class UserController extends Controller
             $blockers[] = 'applications';
         }
 
+        if (
+            $user->jobSeeker?->documents()->exists()
+            || $user->jobSeeker?->resume_path
+            || $user->jobSeeker?->cover_letter_path
+        ) {
+            $blockers[] = 'applicant documents';
+        }
+
+        if (PaymentAssistanceRequest::query()->where('user_id', $user->id)->exists()) {
+            $blockers[] = 'payment assistance or contact history';
+        }
+
         if ($user->employer?->jobs()->exists()) {
             $blockers[] = 'employer jobs';
+        }
+
+        if (
+            AdminOverride::query()->where('user_id', $user->id)->exists()
+            || AdminOverride::query()->where('granted_by', $user->id)->exists()
+        ) {
+            $blockers[] = 'admin overrides';
         }
 
         if (

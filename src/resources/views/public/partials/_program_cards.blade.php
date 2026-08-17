@@ -64,12 +64,12 @@
                                     Continue Application
                                 </x-likeslocale.button>
                             @else
-                                <x-likeslocale.button :href="route('register')" variant="accent">
+                                <x-likeslocale.button :href="route('register', ['program' => $program->slug])" variant="accent">
                                     Get Started
                                 </x-likeslocale.button>
                             @endif
                         @else
-                            <x-likeslocale.button :href="route('register')" variant="accent">
+                            <x-likeslocale.button :href="route('register', ['program' => $program->slug])" variant="accent">
                                 Apply Now
                             </x-likeslocale.button>
 

@@ -2,17 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 
 final class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+
+    public const ACCESS_ACTIVE = 'active';
+    public const ACCESS_INACTIVE = 'inactive';
+    public const ACCESS_EXPIRED = 'expired';
+    public const ACCESS_REVOKED = 'revoked';
+    public const ACCESS_NONE = 'no_access';
 
     protected $fillable = [
         'name',
@@ -51,9 +58,70 @@ final class User extends Authenticatable
         return $this->hasMany(Payment::class);
     }
 
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
     public function entitlements(): HasMany
     {
         return $this->hasMany(Entitlement::class);
+    }
+
+    public function currentEntitlement(): HasOne
+    {
+        return $this->hasOne(Entitlement::class)
+            ->where('status', Entitlement::STATUS_ACTIVE)
+            ->where(function ($query) {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->latestOfMany();
+    }
+
+    public function latestEntitlement(): HasOne
+    {
+        return $this->hasOne(Entitlement::class)->latestOfMany();
+    }
+
+    public function scopeWhereAccessSummary(Builder $query, string $state): Builder
+    {
+        return match ($state) {
+            self::ACCESS_ACTIVE => $query->whereHas('currentEntitlement'),
+            self::ACCESS_INACTIVE => $query
+                ->whereDoesntHave('currentEntitlement')
+                ->whereHas('latestEntitlement', function (Builder $entitlementQuery) {
+                    $entitlementQuery
+                        ->where('status', Entitlement::STATUS_INACTIVE)
+                        ->orWhere(function (Builder $futureQuery) {
+                            $futureQuery
+                                ->where('status', Entitlement::STATUS_ACTIVE)
+                                ->where('starts_at', '>', now())
+                                ->where(function (Builder $expiryQuery) {
+                                    $expiryQuery->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                                });
+                        });
+                }),
+            self::ACCESS_EXPIRED => $query
+                ->whereDoesntHave('currentEntitlement')
+                ->whereHas('latestEntitlement', function (Builder $entitlementQuery) {
+                    $entitlementQuery
+                        ->where('status', Entitlement::STATUS_EXPIRED)
+                        ->orWhere(function (Builder $expiredActiveQuery) {
+                            $expiredActiveQuery
+                                ->where('status', Entitlement::STATUS_ACTIVE)
+                                ->whereNotNull('expires_at')
+                                ->where('expires_at', '<=', now());
+                        });
+                }),
+            self::ACCESS_REVOKED => $query
+                ->whereDoesntHave('currentEntitlement')
+                ->whereHas('latestEntitlement', fn (Builder $entitlementQuery) => $entitlementQuery->where('status', Entitlement::STATUS_REVOKED)),
+            self::ACCESS_NONE => $query->whereDoesntHave('entitlements'),
+            default => $query,
+        };
     }
 
     public function auditLogs(): HasMany
@@ -85,60 +153,62 @@ final class User extends Authenticatable
         };
     }
 
-    public function activeEntitlementsSummary(): array
+    public function accessSummaryState(): string
     {
-        return $this->entitlements
-            ->filter(fn (Entitlement $entitlement) => $entitlement->isActive())
-            ->pluck('type')
-            ->unique()
-            ->values()
-            ->all();
+        $now = now();
+
+        if ($this->currentEntitlement) {
+            return self::ACCESS_ACTIVE;
+        }
+
+        $latest = $this->latestEntitlement;
+
+        if (! $latest) {
+            return self::ACCESS_NONE;
+        }
+
+        if ($latest->status === Entitlement::STATUS_ACTIVE && $latest->expires_at?->lessThanOrEqualTo($now)) {
+            return self::ACCESS_EXPIRED;
+        }
+
+        if ($latest->status === Entitlement::STATUS_ACTIVE && $latest->starts_at?->greaterThan($now)) {
+            return self::ACCESS_INACTIVE;
+        }
+
+        return $latest->status;
     }
 
     public function accessSummaryLabel(): string
     {
-        $activeTypes = $this->activeEntitlementsSummary();
+        $state = $this->accessSummaryState();
 
-        if (empty($activeTypes)) {
-            return 'No Active Access';
-        }
-
-        if (
-            in_array(Entitlement::TYPE_JOB_SEEKER_ACCESS, $activeTypes, true) &&
-            in_array(Entitlement::TYPE_EMPLOYER_POSTING_ACCESS, $activeTypes, true)
-        ) {
-            return 'Seeker + Employer Access Active';
-        }
-
-        if (in_array(Entitlement::TYPE_JOB_SEEKER_ACCESS, $activeTypes, true)) {
-            return 'Job Seeker Access Active';
-        }
-
-        if (in_array(Entitlement::TYPE_EMPLOYER_POSTING_ACCESS, $activeTypes, true)) {
-            return 'Employer Access Active';
-        }
-
-        return 'Access Active';
+        return match ($state) {
+            self::ACCESS_NONE => 'No Access',
+            default => Entitlement::labelFor($state),
+        };
     }
 
     public function accessSummaryTone(): string
     {
-        return empty($this->activeEntitlementsSummary()) ? 'warning' : 'success';
+        return match ($this->accessSummaryState()) {
+            self::ACCESS_ACTIVE => 'success',
+            self::ACCESS_EXPIRED => 'warning',
+            self::ACCESS_REVOKED => 'danger',
+            default => 'neutral',
+        };
     }
 
     public function latestPaymentRecord(): ?Payment
     {
-        return $this->payments
-            ->sortByDesc(fn (Payment $payment) => $payment->created_at?->timestamp ?? 0)
-            ->first();
+        return $this->latestPayment;
     }
 
     public function latestPaymentLabel(): string
     {
         $payment = $this->latestPaymentRecord();
 
-        if (!$payment) {
-            return 'No Payments';
+        if (! $payment) {
+            return 'No Payment';
         }
 
         return Payment::labelFor($payment->status);
@@ -148,7 +218,7 @@ final class User extends Authenticatable
     {
         $payment = $this->latestPaymentRecord();
 
-        if (!$payment) {
+        if (! $payment) {
             return 'neutral';
         }
 

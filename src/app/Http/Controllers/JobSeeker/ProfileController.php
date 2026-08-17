@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
+use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class ProfileController extends Controller
@@ -16,9 +18,15 @@ final class ProfileController extends Controller
 
         abort_unless($jobSeeker, 404);
 
-        $jobSeeker->load('documents');
+        $jobSeeker->load(['documents', 'program']);
 
-        return view('jobseeker.profile.edit', compact('jobSeeker'));
+        $programs = Program::query()
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('jobseeker.profile.edit', compact('jobSeeker', 'programs'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -27,7 +35,12 @@ final class ProfileController extends Controller
 
         abort_unless($jobSeeker, 404);
 
+        $programRule = $jobSeeker->program_id
+            ? ['nullable', 'integer', Rule::in([$jobSeeker->program_id])]
+            : ['required', 'integer', Rule::exists('programs', 'id')->where('is_active', true)];
+
         $validated = $request->validate([
+            'program_id' => $programRule,
             'date_of_birth' => ['nullable', 'date'],
             'location' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -38,6 +51,7 @@ final class ProfileController extends Controller
         ]);
 
         $jobSeeker->update([
+            'program_id' => $jobSeeker->program_id ?: $validated['program_id'],
             'date_of_birth' => $validated['date_of_birth'] ?? null,
             'location' => $validated['location'] ?? null,
             'phone' => $validated['phone'] ?? null,
@@ -76,7 +90,7 @@ final class ProfileController extends Controller
         $completed = 0;
 
         foreach ($fields as $field) {
-            if (!empty($data[$field])) {
+            if (! empty($data[$field])) {
                 $completed++;
             }
         }

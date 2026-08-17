@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
 use App\Models\Employer;
 use App\Models\JobSeeker;
+use App\Models\Program;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -13,14 +14,23 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
 final class RegisteredUserController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.register');
+        $programs = Program::query()
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get();
+
+        $selectedProgram = $programs->firstWhere('slug', trim((string) $request->query('program')));
+
+        return view('auth.register', compact('programs', 'selectedProgram'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -29,8 +39,18 @@ final class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'role' => ['required', 'in:job_seeker'],
+            'program' => [
+                'required',
+                'string',
+                Rule::exists('programs', 'slug')->where('is_active', true),
+            ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $program = Program::query()
+            ->where('slug', $validated['program'])
+            ->where('is_active', true)
+            ->firstOrFail();
 
         $user = User::create([
             'name' => $validated['name'],
@@ -43,6 +63,7 @@ final class RegisteredUserController extends Controller
         if ($validated['role'] === 'job_seeker') {
             JobSeeker::create([
                 'user_id' => $user->id,
+                'program_id' => $program->id,
             ]);
         }
 

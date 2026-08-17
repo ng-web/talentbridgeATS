@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AdminNewApplicationMail;
 use App\Mail\EmployerNewApplicantMail;
 use App\Mail\JobSeekerApplicationSubmittedMail;
 use App\Models\Application;
@@ -31,7 +32,7 @@ final class ApplicationController extends Controller
             ->with(['job.employer.user'])
             ->when($q !== '', function ($query) use ($q) {
                 $query->whereHas('job', function ($jobQuery) use ($q) {
-                    $jobQuery->where('title', 'like', '%' . $q . '%');
+                    $jobQuery->where('title', 'like', '%'.$q.'%');
                 });
             })
             ->when($status !== '', function ($query) use ($status) {
@@ -43,7 +44,7 @@ final class ApplicationController extends Controller
 
         $data = [
             'applications' => $applications,
-            'filters'      => compact('q', 'status'),
+            'filters' => compact('q', 'status'),
         ];
 
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
@@ -104,7 +105,7 @@ final class ApplicationController extends Controller
         }
 
         $validated = $request->validate([
-            'resume'       => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
+            'resume' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
             'cover_letter' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
         ]);
 
@@ -119,12 +120,12 @@ final class ApplicationController extends Controller
         $coverLetterPath = $validated['cover_letter']->store('applications/cover-letters', 'public');
 
         $application = Application::create([
-            'job_id'                       => $job->id,
-            'job_seeker_id'                => $jobSeeker->id,
-            'status'                       => Application::STATUS_APPLIED,
-            'applied_at'                   => now(),
-            'submitted_resume_path'        => $resumePath,
-            'submitted_cover_letter_path'  => $coverLetterPath,
+            'job_id' => $job->id,
+            'job_seeker_id' => $jobSeeker->id,
+            'status' => Application::STATUS_APPLIED,
+            'applied_at' => now(),
+            'submitted_resume_path' => $resumePath,
+            'submitted_cover_letter_path' => $coverLetterPath,
         ]);
 
         $this->dispatchApplicationNotifications($application);
@@ -142,7 +143,7 @@ final class ApplicationController extends Controller
 
         $withdrawableStatuses = [Application::STATUS_APPLIED, Application::STATUS_REVIEWING];
 
-        if (!in_array($application->status, $withdrawableStatuses, true)) {
+        if (! in_array($application->status, $withdrawableStatuses, true)) {
             return back()->with('error', 'This application cannot be withdrawn at its current stage.');
         }
 
@@ -153,25 +154,94 @@ final class ApplicationController extends Controller
 
     private function dispatchApplicationNotifications(Application $application): void
     {
+        $application->loadMissing([
+            'jobSeeker.user',
+            'jobSeeker.program',
+            'job.employer.user',
+        ]);
+
         $jobSeekerUser = $application->jobSeeker?->user;
         $employer = $application->job?->employer;
         $employerUser = $employer?->user;
 
+        if ($employerUser) {
+            $this->attemptApplicationNotification(
+                $application,
+                'employer_database_notification',
+                $employerUser->email,
+                function () use ($employerUser, $application): void {
+                    $employerUser->notify(new ApplicationSubmittedNotification($application));
+                },
+            );
+        }
+
+        if ($jobSeekerUser?->email) {
+            $this->attemptApplicationNotification(
+                $application,
+                'applicant_confirmation_email',
+                $jobSeekerUser->email,
+                function () use ($jobSeekerUser, $application): void {
+                    Mail::to($jobSeekerUser->email)->send(new JobSeekerApplicationSubmittedMail($application));
+                },
+            );
+        }
+
+        if ($employer?->notificationEmail()) {
+            $this->attemptApplicationNotification(
+                $application,
+                'employer_new_applicant_email',
+                $employer->notificationEmail(),
+                function () use ($employer, $application): void {
+                    Mail::to($employer->notificationEmail())->send(new EmployerNewApplicantMail($application));
+                },
+            );
+        }
+
+        $adminRecipient = trim((string) config('mail.admin_address'));
+
+        $this->attemptApplicationNotification(
+            $application,
+            'admin_new_application_email',
+            $adminRecipient,
+            function () use ($adminRecipient, $application): void {
+                Mail::to($adminRecipient)->send(new AdminNewApplicationMail($application));
+            },
+        );
+    }
+
+    private function attemptApplicationNotification(
+        Application $application,
+        string $type,
+        ?string $recipient,
+        callable $dispatch,
+    ): void {
+        if (! $recipient) {
+            Log::warning('Application notification skipped', [
+                'application_id' => $application->id,
+                'user_id' => $application->jobSeeker?->user_id,
+                'notification_type' => $type,
+                'reason' => 'recipient_not_configured',
+            ]);
+
+            return;
+        }
+
         try {
-            if ($employerUser) {
-                $employerUser->notify(new ApplicationSubmittedNotification($application));
-            }
+            $dispatch();
 
-            if ($jobSeekerUser?->email) {
-                Mail::to($jobSeekerUser->email)->send(new JobSeekerApplicationSubmittedMail($application));
-            }
-
-            if ($employer?->notificationEmail()) {
-                Mail::to($employer->notificationEmail())->send(new EmployerNewApplicantMail($application));
-            }
+            Log::info('Application notification dispatched', [
+                'application_id' => $application->id,
+                'user_id' => $application->jobSeeker?->user_id,
+                'recipient' => $recipient,
+                'notification_type' => $type,
+            ]);
         } catch (\Throwable $e) {
             Log::error('Application notification failed', [
                 'application_id' => $application->id,
+                'user_id' => $application->jobSeeker?->user_id,
+                'recipient' => $recipient,
+                'notification_type' => $type,
+                'exception_class' => $e::class,
                 'message' => $e->getMessage(),
             ]);
         }

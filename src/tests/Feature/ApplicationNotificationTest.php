@@ -33,6 +33,7 @@ final class ApplicationNotificationTest extends TestCase
 
         $this->seed(RolesAndPermissionsSeeder::class);
         Storage::fake('public');
+        Storage::fake('private');
         config()->set('mail.admin_address', 'operations@example.test');
     }
 
@@ -49,17 +50,33 @@ final class ApplicationNotificationTest extends TestCase
             ->assertRedirect(route('jobseeker.applications.index'));
 
         $this->assertDatabaseCount('applications', 1);
+        $application = \App\Models\Application::query()->firstOrFail();
+        Storage::disk('private')->assertExists($application->submitted_resume_path);
+        Storage::disk('private')->assertExists($application->submitted_cover_letter_path);
+        Storage::disk('public')->assertMissing($application->submitted_resume_path);
+        Storage::disk('public')->assertMissing($application->submitted_cover_letter_path);
+        $this->assertNotSame('profiles/resume.pdf', $application->submitted_resume_path);
         Notification::assertSentTo($employerUser, ApplicationSubmittedNotification::class);
-        Mail::assertSent(JobSeekerApplicationSubmittedMail::class, fn ($mail) => $mail->hasTo($applicant->email));
-        Mail::assertSent(EmployerNewApplicantMail::class, fn ($mail) => $mail->hasTo($employer->notificationEmail()));
+        Mail::assertSent(JobSeekerApplicationSubmittedMail::class, fn ($mail) => $mail->hasTo($applicant->email)
+            && $mail->attachments === []
+            && $mail->rawAttachments === []
+            && $mail->diskAttachments === []);
+        Mail::assertSent(EmployerNewApplicantMail::class, fn ($mail) => $mail->hasTo($employer->notificationEmail())
+            && $mail->attachments === []
+            && $mail->rawAttachments === []
+            && $mail->diskAttachments === []);
         Mail::assertSent(AdminNewApplicationMail::class, function ($mail) {
             $html = $mail->render();
 
             return $mail->hasTo('operations@example.test')
-                && str_contains($html, '+1 876 555 0110')
                 && str_contains($html, 'Summer Work &amp; Travel')
                 && str_contains($html, 'Hospitality Associate')
-                && str_contains($html, 'Test Sponsor');
+                && ! str_contains($html, '+1 876 555 0110')
+                && ! str_contains($html, 'applicant@example.test')
+                && ! str_contains($html, 'Test Sponsor')
+                && $mail->attachments === []
+                && $mail->rawAttachments === []
+                && $mail->diskAttachments === [];
         });
     }
 
@@ -133,6 +150,7 @@ final class ApplicationNotificationTest extends TestCase
             'phone' => '+1 876 555 0110',
             'resume_path' => 'profiles/resume.pdf',
         ]);
+        Storage::disk('private')->put('profiles/resume.pdf', 'synthetic resume');
         Entitlement::create([
             'user_id' => $applicant->id,
             'type' => Entitlement::TYPE_JOB_SEEKER_ACCESS,

@@ -72,7 +72,7 @@ final class JobSeekerDocument extends Model
     public static function validationRulesFor(string $type): array
     {
         return match ($type) {
-            self::TYPE_PROFILE_PHOTO => ['required', 'file', 'mimes:jpg,jpeg,png', 'max:2048'],
+            self::TYPE_PROFILE_PHOTO => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             default                  => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         };
     }

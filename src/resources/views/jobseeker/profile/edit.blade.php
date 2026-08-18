@@ -21,7 +21,7 @@
             <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
                 <div class="flex flex-col items-center text-center">
                     @if($profilePhoto)
-                        <img src="{{ asset('storage/' . $profilePhoto->file_path) }}"
+                        <img src="{{ route('documents.job-seeker', $profilePhoto) }}"
                              alt="Profile photo"
                              class="w-24 h-24 rounded-2xl object-cover border border-gray-200 shadow-sm">
                     @else
@@ -88,7 +88,7 @@
                     <p class="font-medium text-gray-700">Default Resume</p>
                     @if($jobSeeker->resume_path)
                         <div class="flex items-center gap-3">
-                            <a href="{{ asset('storage/'.$jobSeeker->resume_path) }}"
+                            <a href="{{ route('documents.profile', [$jobSeeker, 'resume']) }}"
                                class="text-violet-600 hover:underline"
                                target="_blank">View resume</a>
                             <span class="text-gray-300">·</span>
@@ -320,7 +320,7 @@
                                         @foreach($docs as $doc)
                                             <div class="flex items-center justify-between gap-2 rounded-xl bg-white border border-green-100 px-3 py-2">
                                                 <div class="min-w-0">
-                                                    <a href="{{ asset('storage/' . $doc->file_path) }}"
+                                                    <a href="{{ route('documents.job-seeker', $doc) }}"
                                                        target="_blank"
                                                        class="text-xs font-medium text-[#6f4cb2] hover:underline truncate block max-w-[140px]"
                                                        title="{{ $doc->original_name }}">

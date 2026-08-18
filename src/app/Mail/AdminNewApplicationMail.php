@@ -19,11 +19,8 @@ final class AdminNewApplicationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $applicant = $this->application->jobSeeker?->user?->name ?? 'Applicant';
-        $job = $this->application->job?->title ?? 'Job';
-
         return new Envelope(
-            subject: "New Application Received — {$applicant} — {$job}",
+            subject: 'New Application Received',
         );
     }
 

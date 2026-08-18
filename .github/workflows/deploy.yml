@@ -3,6 +3,10 @@ name: Deploy to Production
 on:
   workflow_dispatch:
 
+concurrency:
+  group: kairox-production-deployment
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,11 +16,13 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           LIKESPAY_GITHUB_TOKEN: ${{ secrets.LIKESPAY_GITHUB_TOKEN }}
+          DEPLOY_RUN_ID: ${{ github.run_id }}
+          DEPLOY_RUN_ATTEMPT: ${{ github.run_attempt }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: LIKESPAY_GITHUB_TOKEN
+          envs: LIKESPAY_GITHUB_TOKEN,DEPLOY_RUN_ID,DEPLOY_RUN_ATTEMPT
           script: |
             set -e
 
@@ -34,20 +40,54 @@ jobs:
 
             echo "--- Backing up database ---"
             source /var/www/kairox/.env
-            mkdir -p /var/www/kairox/backups
+            umask 077
+            install -d -m 700 /var/www/kairox/backups
+            BACKUP_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+            BACKUP_TEMP="$(mktemp "/var/www/kairox/backups/backup_${BACKUP_STAMP}_run-${DEPLOY_RUN_ID:-manual}-${DEPLOY_RUN_ATTEMPT:-0}_XXXXXX")"
+            BACKUP_FILE="${BACKUP_TEMP}.sql"
+            BACKUP_FAILED="${BACKUP_TEMP}.failed"
+
+            cleanup_incomplete_backup() {
+              if [ -n "${BACKUP_TEMP:-}" ] && [ -f "${BACKUP_TEMP}" ]; then
+                chmod 600 "${BACKUP_TEMP}" || true
+                mv -f "${BACKUP_TEMP}" "${BACKUP_FAILED}" || true
+                echo "ERROR: Database backup failed; incomplete output retained with a .failed suffix."
+              fi
+            }
+
+            trap cleanup_incomplete_backup EXIT
 
             docker compose -f docker-compose.prod.yml exec -T db \
               mysqldump \
               -u root \
               -p"${MYSQL_ROOT_PASSWORD}" \
               "${DB_DATABASE:-kairox_portal}" \
-              > /var/www/kairox/backups/backup_$(date +%Y%m%d_%H%M%S).sql
+              > "${BACKUP_TEMP}"
+
+            if [ ! -s "${BACKUP_TEMP}" ]; then
+              echo "ERROR: Database backup is empty."
+              exit 1
+            fi
+
+            chmod 600 "${BACKUP_TEMP}"
+            ln "${BACKUP_TEMP}" "${BACKUP_FILE}"
+            rm "${BACKUP_TEMP}"
+            BACKUP_TEMP=""
+            trap - EXIT
 
             echo "Database backup completed."
 
             echo "--- Pulling latest code ---"
             git fetch origin main
             git pull --ff-only origin main
+
+            echo "--- Restricting private applicant storage ---"
+            docker compose -f docker-compose.prod.yml exec -T -u 0 \
+              app sh -lc '
+                install -d -m 700 -o 1000 -g 1000 /var/www/html/storage/app/private
+                chown 1000:1000 /var/www/html/storage/app/private
+                chmod 700 /var/www/html/storage/app/private
+              '
 
             echo "New production commit:"
             git log -1 --oneline

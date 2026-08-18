@@ -23,8 +23,7 @@ final class EmployerProvisioningController extends Controller
 {
     public function __construct(
         private readonly ActivateEntitlementFromPayment $activateEntitlement,
-    ) {
-    }
+    ) {}
 
     public function create(): View
     {
@@ -54,8 +53,8 @@ final class EmployerProvisioningController extends Controller
             'plan_id' => ['nullable', 'exists:plans,id'],
         ]);
 
-        if (!empty($validated['website']) && !str_starts_with($validated['website'], 'http://') && !str_starts_with($validated['website'], 'https://')) {
-            $validated['website'] = 'https://' . ltrim($validated['website'], '/');
+        if (! empty($validated['website']) && ! str_starts_with($validated['website'], 'http://') && ! str_starts_with($validated['website'], 'https://')) {
+            $validated['website'] = 'https://'.ltrim($validated['website'], '/');
         }
 
         $temporaryPassword = Str::password(12);
@@ -84,7 +83,7 @@ final class EmployerProvisioningController extends Controller
                 'billing_status' => 'pending',
             ]);
 
-            if (($validated['grant_access_now'] ?? false) && !empty($validated['plan_id'])) {
+            if (($validated['grant_access_now'] ?? false) && ! empty($validated['plan_id'])) {
                 $plan = Plan::query()->findOrFail($validated['plan_id']);
 
                 $payment = Payment::create([
@@ -92,7 +91,7 @@ final class EmployerProvisioningController extends Controller
                     'plan_id' => $plan->id,
                     'gateway' => 'manual',
                     'entitlement_type' => $plan->entitlement_type,
-                    'order_id' => 'MANUAL-' . Str::upper(Str::random(10)),
+                    'order_id' => 'MANUAL-'.Str::upper(Str::random(10)),
                     'external_ref' => null,
                     'currency' => $plan->currency,
                     'amount' => $plan->amount,
@@ -118,8 +117,7 @@ final class EmployerProvisioningController extends Controller
             DB::rollBack();
 
             Log::error('Employer provisioning failed during database transaction', [
-                'email' => $validated['email'] ?? null,
-                'message' => $e->getMessage(),
+                'exception_class' => $e::class,
             ]);
 
             return back()
@@ -142,8 +140,7 @@ final class EmployerProvisioningController extends Controller
         } catch (Throwable $e) {
             Log::error('Employer provisioning email failed after account creation', [
                 'user_id' => $user->id,
-                'email' => $user->email,
-                'message' => $e->getMessage(),
+                'exception_class' => $e::class,
             ]);
 
             return redirect()

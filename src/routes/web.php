@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\PaymentReviewController;
 use App\Http\Controllers\Auth\ForcedPasswordChangeController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\Employer\ApplicantController as EmployerApplicantController;
 use App\Http\Controllers\Employer\CompanyController as EmployerCompanyController;
 use App\Http\Controllers\Employer\DashboardController as EmployerDashboardController;
@@ -17,10 +18,9 @@ use App\Http\Controllers\Locked\EmployerAccessController;
 use App\Http\Controllers\Locked\SeekerAccessController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\ApplyController;
+use App\Http\Controllers\Public\PaymentAssistanceController;
 use App\Http\Controllers\Public\PricingController;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Public\PaymentAssistanceController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -37,8 +37,23 @@ Route::get('/contact', [PaymentAssistanceController::class, 'contact'])->name('c
 Route::post('/contact', [PaymentAssistanceController::class, 'contactStore'])->name('contact.store');
 Route::get('/contact/thank-you', [PaymentAssistanceController::class, 'contactThankyou'])->name('contact.thankyou');
 
+Route::post('/payments/wipay/callback', [\App\Http\Controllers\Payment\CheckoutController::class, 'callback'])
+    ->name('payments.wipay.callback');
+
 Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/documents/job-seeker/{document}', [DocumentDownloadController::class, 'jobSeekerDocument'])
+        ->whereNumber('document')
+        ->name('documents.job-seeker');
+    Route::get('/documents/profile/{jobSeeker}/{type}', [DocumentDownloadController::class, 'profile'])
+        ->whereNumber('jobSeeker')
+        ->whereIn('type', ['resume', 'cover-letter'])
+        ->name('documents.profile');
+    Route::get('/documents/application/{application}/{type}', [DocumentDownloadController::class, 'application'])
+        ->whereNumber('application')
+        ->whereIn('type', ['resume', 'cover-letter'])
+        ->name('documents.application');
 
     Route::get('/locked/seeker-access', SeekerAccessController::class)->name('locked.seeker');
     Route::get('/locked/employer-access', EmployerAccessController::class)->name('locked.employer');
@@ -169,13 +184,8 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::prefix('payments')->name('payments.')->group(function () {
-        Route::get('/wipay/seeker/{plan:slug}', [\App\Http\Controllers\Payment\CheckoutController::class, 'seeker'])
-            ->name('wipay.seeker');
-
-        Route::match(['get', 'post'], '/wipay/callback', [\App\Http\Controllers\Payment\CheckoutController::class, 'callback'])
-            ->name('wipay.callback');
-    });
+    Route::get('/payments/wipay/seeker/{plan:slug}', [\App\Http\Controllers\Payment\CheckoutController::class, 'seeker'])
+        ->name('payments.wipay.seeker');
 
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');

@@ -32,17 +32,17 @@ final class WiPayPaymentService implements PaymentServiceInterface
 
         $payload = [
             'account_number' => (string) config('services.wipay.account_number'),
-            'country_code'   => (string) config('services.wipay.country_code', 'JM'),
-            'currency'       => (string) ($meta['currency'] ?? $payment->currency ?? config('services.wipay.currency', 'JMD')),
-            'environment'    => (string) config('services.wipay.environment', 'live'),
-            'fee_structure'  => (string) config('services.wipay.fee_structure', 'customer_pay'),
-            'method'         => 'credit_card',
-            'card_type'      => 'mastercard', // temporary for sandbox consistency
-            'order_id'       => $payment->order_id,
-            'origin'         => (string) ($meta['origin'] ?? config('services.wipay.origin', 'KairoxExchange')),
-            'response_url'   => $responseUrl,
-            'total'          => number_format((float) $payment->amount, 2, '.', ''),
-            'email'          => $user->email,
+            'country_code' => (string) config('services.wipay.country_code', 'JM'),
+            'currency' => (string) ($meta['currency'] ?? $payment->currency ?? config('services.wipay.currency', 'JMD')),
+            'environment' => (string) config('services.wipay.environment', 'live'),
+            'fee_structure' => (string) config('services.wipay.fee_structure', 'customer_pay'),
+            'method' => 'credit_card',
+            'card_type' => 'mastercard', // temporary for sandbox consistency
+            'order_id' => $payment->order_id,
+            'origin' => (string) ($meta['origin'] ?? config('services.wipay.origin', 'KairoxExchange')),
+            'response_url' => $responseUrl,
+            'total' => number_format((float) $payment->amount, 2, '.', ''),
+            'email' => $user->email,
         ];
 
         $nameParts = preg_split('/\s+/', trim($user->name)) ?: [];
@@ -57,7 +57,7 @@ final class WiPayPaymentService implements PaymentServiceInterface
             $payload['name'] = $user->name ?: $firstName;
         }
 
-        if (!empty($meta['phone'])) {
+        if (! empty($meta['phone'])) {
             $payload['phone'] = (string) $meta['phone'];
         }
 
@@ -66,41 +66,40 @@ final class WiPayPaymentService implements PaymentServiceInterface
             'entitlement_type' => $payment->entitlement_type,
         ], JSON_UNESCAPED_SLASHES);
 
-        if (!empty($data)) {
+        if (! empty($data)) {
             $payload['data'] = $data;
         }
 
-        if (!empty($meta['avs'])) {
+        if (! empty($meta['avs'])) {
             $payload['avs'] = (string) $meta['avs'];
         }
 
-        Log::info('WiPay request payload', [
+        Log::info('WiPay checkout request started', [
             'gateway' => $this->gateway(),
             'payment_id' => $payment->id,
             'order_id' => $payment->order_id,
-            'payload' => array_merge($payload, [
-                'account_number' => '***redacted***',
-            ]),
         ]);
 
         $response = Http::asForm()
             ->acceptJson()
-            ->post($baseUrl . '/plugins/payments/request', $payload);
+            ->post($baseUrl.'/plugins/payments/request', $payload);
 
         $body = $response->json();
 
         Log::info('WiPay bootstrap response', [
             'gateway' => $this->gateway(),
             'payment_id' => $payment->id,
+            'order_id' => $payment->order_id,
             'http_status' => $response->status(),
-            'body' => $body ?: $response->body(),
+            'transaction_reference_present' => is_array($body) && filled($body['transaction_id'] ?? null),
+            'checkout_url_present' => is_array($body) && filled($body['url'] ?? null),
         ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('WiPay bootstrap request failed: ' . $response->body());
+            throw new RuntimeException('WiPay bootstrap request failed with HTTP '.$response->status().'.');
         }
 
-        if (!is_array($body) || empty($body['url'])) {
+        if (! is_array($body) || empty($body['url'])) {
             throw new RuntimeException('WiPay did not return a checkout URL.');
         }
 
@@ -108,7 +107,10 @@ final class WiPayPaymentService implements PaymentServiceInterface
             'url' => $body['url'],
             'transaction_id' => $body['transaction_id'] ?? null,
             'message' => $body['message'] ?? null,
-            'raw' => $body,
+            'diagnostics' => [
+                'http_status' => $response->status(),
+                'transaction_id' => $body['transaction_id'] ?? null,
+            ],
         ];
     }
 
@@ -154,38 +156,46 @@ final class WiPayPaymentService implements PaymentServiceInterface
                 ?? $payload['transaction_date']
                 ?? ''
             ),
-            'raw' => $payload,
         ];
     }
 
-    public function verifySuccessfulRedirect(Payment $payment, array $payload): bool
+    public function verifyRedirect(Payment $payment, array $payload): bool
     {
         $parsed = $this->parseRedirectPayload($payload);
-
-        $normalizedStatus = strtolower(trim((string) $parsed['status']));
-
-        if (!in_array($normalizedStatus, ['success', 'approved', 'completed'], true)) {
-            Log::warning('WiPay verify skipped: callback was not success-like', [
-                'payment_id' => $payment->id,
-                'status' => $parsed['status'],
-            ]);
-
-            return false;
-        }
 
         if ($parsed['transaction_id'] === '' || $parsed['hash'] === '') {
             Log::warning('WiPay verify failed: missing transaction id or hash', [
                 'payment_id' => $payment->id,
                 'transaction_id' => $parsed['transaction_id'],
                 'hash_present' => $parsed['hash'] !== '',
-                'payload' => $parsed['raw'],
             ]);
 
             return false;
         }
 
+        $expectedTransactionId = trim((string) $payment->external_ref);
+        $transactionId = trim((string) $parsed['transaction_id']);
+        $callbackOrderId = trim((string) $parsed['order_id']);
+        $callbackMinorUnits = $this->minorUnits((string) $parsed['total']);
+        $expectedMinorUnits = $this->minorUnits((string) $payment->amount);
+
+        if ($payment->gateway !== $this->gateway()) {
+            return $this->rejectBinding($payment, 'gateway_mismatch');
+        }
+
+        if ($callbackOrderId === '' || ! hash_equals((string) $payment->order_id, $callbackOrderId)) {
+            return $this->rejectBinding($payment, 'order_mismatch');
+        }
+
+        if ($expectedTransactionId === '' || ! hash_equals($expectedTransactionId, $transactionId)) {
+            return $this->rejectBinding($payment, 'transaction_mismatch');
+        }
+
+        if ($callbackMinorUnits === null || $expectedMinorUnits === null || ! hash_equals($expectedMinorUnits, $callbackMinorUnits)) {
+            return $this->rejectBinding($payment, 'amount_mismatch');
+        }
+
         $apiKey = trim((string) config('services.wipay.api_key'));
-        $accountNumber = trim((string) config('services.wipay.account_number'));
 
         if ($apiKey === '') {
             throw new RuntimeException('WiPay API key is not configured.');
@@ -197,36 +207,23 @@ final class WiPayPaymentService implements PaymentServiceInterface
             : '';
 
         $originalTotal = number_format((float) $payment->amount, 2, '.', '');
-        $transactionId = trim((string) $parsed['transaction_id']);
         $orderId = trim((string) ($parsed['order_id'] ?: $payment->order_id));
         $receivedHash = strtolower(trim((string) $parsed['hash']));
 
         $candidates = [
             // Most likely candidates
             'txn_callback_api_formatted' => $callbackTotal !== ''
-                ? md5($transactionId . $callbackTotal . $apiKey)
+                ? md5($transactionId.$callbackTotal.$apiKey)
                 : null,
 
-            'txn_original_api_formatted' => md5($transactionId . $originalTotal . $apiKey),
+            'txn_original_api_formatted' => md5($transactionId.$originalTotal.$apiKey),
 
             'txn_callback_api_raw' => $callbackTotalRaw !== ''
-                ? md5($transactionId . $callbackTotalRaw . $apiKey)
+                ? md5($transactionId.$callbackTotalRaw.$apiKey)
                 : null,
 
-            // Defensive forensic candidates
-            'txn_original_api_raw' => md5($transactionId . trim((string) $payment->amount) . $apiKey),
-
-            'txn_callback_account_formatted' => $callbackTotal !== ''
-                ? md5($transactionId . $callbackTotal . $accountNumber)
-                : null,
-
-            'txn_original_account_formatted' => md5($transactionId . $originalTotal . $accountNumber),
-
-            'order_callback_api_formatted' => $callbackTotal !== ''
-                ? md5($orderId . $callbackTotal . $apiKey)
-                : null,
-
-            'order_original_api_formatted' => md5($orderId . $originalTotal . $apiKey),
+            // The prior integration's callback verifier used transaction ID + total + API key.
+            'txn_original_api_raw' => md5($transactionId.trim((string) $payment->amount).$apiKey),
         ];
 
         $filteredCandidates = array_filter(
@@ -234,18 +231,12 @@ final class WiPayPaymentService implements PaymentServiceInterface
             static fn ($value) => is_string($value) && $value !== ''
         );
 
-        Log::info('WiPay verification candidates', [
+        Log::info('WiPay callback verification attempted', [
             'payment_id' => $payment->id,
             'order_id' => $orderId,
             'transaction_id' => $transactionId,
-            'callback_total_raw' => $callbackTotalRaw,
-            'callback_total_formatted' => $callbackTotal,
-            'original_total' => $originalTotal,
-            'received_hash' => $receivedHash,
-            'candidates' => $filteredCandidates,
             'environment' => config('services.wipay.environment'),
-            'api_key_length' => strlen($apiKey),
-            'account_number_suffix' => $accountNumber !== '' ? substr($accountNumber, -4) : null,
+            'candidate_count' => count($filteredCandidates),
         ]);
 
         foreach ($filteredCandidates as $name => $candidate) {
@@ -263,6 +254,32 @@ final class WiPayPaymentService implements PaymentServiceInterface
             'payment_id' => $payment->id,
             'order_id' => $orderId,
             'transaction_id' => $transactionId,
+        ]);
+
+        return false;
+    }
+
+    private function minorUnits(string $amount): ?string
+    {
+        $amount = trim($amount);
+
+        if (! preg_match('/^(\d+)(?:\.(\d{1,2}))?$/', $amount, $matches)) {
+            return null;
+        }
+
+        $whole = ltrim($matches[1], '0');
+        $whole = $whole === '' ? '0' : $whole;
+        $fraction = str_pad($matches[2] ?? '', 2, '0');
+
+        return ltrim($whole.$fraction, '0') ?: '0';
+    }
+
+    private function rejectBinding(Payment $payment, string $reason): bool
+    {
+        Log::warning('WiPay callback binding rejected', [
+            'payment_id' => $payment->id,
+            'order_id' => $payment->order_id,
+            'reason' => $reason,
         ]);
 
         return false;

@@ -58,7 +58,7 @@
                                 <div>
                                     <span class="font-medium text-gray-900">Profile resume on file</span>
                                     <span class="text-gray-400 mx-1.5">·</span>
-                                    <a href="{{ asset('storage/' . $jobSeeker->resume_path) }}"
+                                    <a href="{{ route('documents.profile', [$jobSeeker, 'resume']) }}"
                                        target="_blank"
                                        class="font-medium text-[#6f4cb2] hover:underline">View</a>
                                 </div>

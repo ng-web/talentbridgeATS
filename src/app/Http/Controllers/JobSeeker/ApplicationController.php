@@ -9,15 +9,20 @@ use App\Mail\JobSeekerApplicationSubmittedMail;
 use App\Models\Application;
 use App\Models\Job;
 use App\Notifications\ApplicationSubmittedNotification;
+use App\Services\Documents\ApplicantDocumentStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Throwable;
 
 final class ApplicationController extends Controller
 {
+    public function __construct(private readonly ApplicantDocumentStorage $storage) {}
+
     public function index(Request $request): View
     {
         $jobSeeker = Auth::user()->jobSeeker;
@@ -109,24 +114,54 @@ final class ApplicationController extends Controller
             'cover_letter' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
         ]);
 
-        if (isset($validated['resume'])) {
-            $resumePath = $validated['resume']->store('applications/resumes', 'public');
-        } elseif ($jobSeeker->resume_path) {
-            $resumePath = $jobSeeker->resume_path;
-        } else {
+        if (! isset($validated['resume']) && ! $jobSeeker->resume_path) {
             return back()->withErrors(['resume' => 'Please upload a resume or add one to your profile first.']);
         }
 
-        $coverLetterPath = $validated['cover_letter']->store('applications/cover-letters', 'public');
+        $storedPaths = [];
 
-        $application = Application::create([
-            'job_id' => $job->id,
-            'job_seeker_id' => $jobSeeker->id,
-            'status' => Application::STATUS_APPLIED,
-            'applied_at' => now(),
-            'submitted_resume_path' => $resumePath,
-            'submitted_cover_letter_path' => $coverLetterPath,
-        ]);
+        try {
+            $application = DB::transaction(function () use ($validated, $job, $jobSeeker, &$storedPaths): Application {
+                $application = Application::create([
+                    'job_id' => $job->id,
+                    'job_seeker_id' => $jobSeeker->id,
+                    'status' => Application::STATUS_APPLIED,
+                    'applied_at' => now(),
+                ]);
+
+                $directory = 'applications/'.$application->id;
+                $resumePath = isset($validated['resume'])
+                    ? $this->storage->store($validated['resume'], $jobSeeker->id, $directory.'/resume')
+                    : $this->storage->copyPrivate($jobSeeker->resume_path, $jobSeeker->id, $directory.'/resume');
+                $storedPaths[] = $resumePath;
+
+                $coverLetterPath = $this->storage->store(
+                    $validated['cover_letter'],
+                    $jobSeeker->id,
+                    $directory.'/cover-letter',
+                );
+                $storedPaths[] = $coverLetterPath;
+
+                $application->update([
+                    'submitted_resume_path' => $resumePath,
+                    'submitted_cover_letter_path' => $coverLetterPath,
+                ]);
+
+                return $application;
+            });
+        } catch (Throwable $e) {
+            foreach ($storedPaths as $storedPath) {
+                $this->storage->delete($storedPath);
+            }
+
+            Log::error('Secure application document storage failed', [
+                'job_seeker_id' => $jobSeeker->id,
+                'job_id' => $job->id,
+                'exception_class' => $e::class,
+            ]);
+
+            return back()->withInput()->with('error', 'The application documents could not be stored securely. Please try again.');
+        }
 
         $this->dispatchApplicationNotifications($application);
 
@@ -232,17 +267,14 @@ final class ApplicationController extends Controller
             Log::info('Application notification dispatched', [
                 'application_id' => $application->id,
                 'user_id' => $application->jobSeeker?->user_id,
-                'recipient' => $recipient,
                 'notification_type' => $type,
             ]);
         } catch (\Throwable $e) {
             Log::error('Application notification failed', [
                 'application_id' => $application->id,
                 'user_id' => $application->jobSeeker?->user_id,
-                'recipient' => $recipient,
                 'notification_type' => $type,
                 'exception_class' => $e::class,
-                'message' => $e->getMessage(),
             ]);
         }
     }

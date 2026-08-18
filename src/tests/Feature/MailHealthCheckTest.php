@@ -14,7 +14,7 @@ final class MailHealthCheckTest extends TestCase
         config()->set('mail.admin_address', 'operations@example.test');
 
         $this->artisan('kairox:test-mail')
-            ->expectsOutput('Sending Kairox test email to operations@example.test...')
+            ->expectsOutput('Sending Kairox test email to the configured admin recipient...')
             ->expectsOutput('Test email dispatched successfully.')
             ->assertSuccessful();
 

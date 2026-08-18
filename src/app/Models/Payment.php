@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class Payment extends Model
 {
     public const GATEWAY_WIPAY = 'wipay';
+
     public const GATEWAY_STRIPE = 'stripe';
+
     public const GATEWAY_PAYPAL = 'paypal';
 
     public const GATEWAYS = [
@@ -18,9 +20,13 @@ final class Payment extends Model
     ];
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_PAID = 'paid';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_REFUNDED = 'refunded';
+
     public const STATUS_REVIEW_REQUIRED = 'review_required';
 
     public const STATUSES = [
@@ -91,6 +97,19 @@ final class Payment extends Model
     public function requiresReview(): bool
     {
         return $this->status === self::STATUS_REVIEW_REQUIRED;
+    }
+
+    public function canTransitionTo(string $status): bool
+    {
+        if (! in_array($status, self::STATUSES, true)) {
+            return false;
+        }
+
+        if ($status === $this->status) {
+            return true;
+        }
+
+        return ! in_array($this->status, [self::STATUS_PAID, self::STATUS_REFUNDED], true);
     }
 
     public function plan(): BelongsTo

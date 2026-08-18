@@ -377,7 +377,7 @@
 
                                 @if($user->jobSeeker->resume_path)
                                     <a
-                                        href="{{ asset('storage/'.$user->jobSeeker->resume_path) }}"
+                                        href="{{ route('documents.profile', [$user->jobSeeker, 'resume']) }}"
                                         target="_blank"
                                         class="mt-1 inline-flex text-[#6f4cb2] hover:underline"
                                     >
@@ -576,7 +576,7 @@
 
                                     @if($doc)
                                         <div class="mt-2 flex flex-wrap items-center gap-2">
-                                            <a href="{{ asset('storage/' . $doc->file_path) }}"
+                                            <a href="{{ route('documents.job-seeker', $doc) }}"
                                                target="_blank"
                                                class="text-sm font-medium text-[#6f4cb2] hover:underline">
                                                 View

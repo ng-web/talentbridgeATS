@@ -13,5 +13,5 @@ interface PaymentServiceInterface
 
     public function parseRedirectPayload(array $payload): array;
 
-    public function verifySuccessfulRedirect(Payment $payment, array $payload): bool;
+    public function verifyRedirect(Payment $payment, array $payload): bool;
 }

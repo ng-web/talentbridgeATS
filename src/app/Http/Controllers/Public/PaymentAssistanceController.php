@@ -18,7 +18,7 @@ final class PaymentAssistanceController extends Controller
 {
     public function create(Plan $plan): View
     {
-        $user      = Auth::user();
+        $user = Auth::user();
         $jobSeeker = $user?->jobSeeker;
 
         return view('public.payment-assistance', compact('plan', 'user', 'jobSeeker'));
@@ -28,44 +28,44 @@ final class PaymentAssistanceController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
-            'email'     => ['required', 'email', 'max:255'],
-            'phone'     => ['nullable', 'string', 'max:30'],
-            'whatsapp'  => ['nullable', 'string', 'max:30'],
-            'message'   => ['nullable', 'string', 'max:2000'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'message' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $assistanceRequest = PaymentAssistanceRequest::create([
-            'user_id'      => Auth::id(),
-            'plan_id'      => $plan->id,
-            'full_name'    => $validated['full_name'],
-            'email'        => $validated['email'],
-            'phone'        => $validated['phone'] ?? null,
-            'whatsapp'     => $validated['whatsapp'] ?? null,
+            'user_id' => Auth::id(),
+            'plan_id' => $plan->id,
+            'full_name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'whatsapp' => $validated['whatsapp'] ?? null,
             'program_name' => $plan->name,
-            'amount'       => $plan->amount,
-            'currency'     => $plan->currency,
-            'message'      => $validated['message'] ?? null,
-            'status'       => PaymentAssistanceRequest::STATUS_NEW,
+            'amount' => $plan->amount,
+            'currency' => $plan->currency,
+            'message' => $validated['message'] ?? null,
+            'status' => PaymentAssistanceRequest::STATUS_NEW,
         ]);
 
         try {
             Mail::to(config('mail.admin_address', config('mail.from.address')))
                 ->send(new PaymentAssistanceAdminMail($assistanceRequest));
         } catch (\Throwable $e) {
-            Log::error('PaymentAssistance: admin notification failed', ['error' => $e->getMessage()]);
+            Log::error('PaymentAssistance: admin notification failed', ['exception_class' => $e::class]);
         }
 
         try {
             Mail::to($assistanceRequest->email)
                 ->send(new PaymentAssistanceApplicantMail($assistanceRequest));
         } catch (\Throwable $e) {
-            Log::error('PaymentAssistance: applicant confirmation failed', ['error' => $e->getMessage()]);
+            Log::error('PaymentAssistance: applicant confirmation failed', ['exception_class' => $e::class]);
         }
 
         return redirect()
             ->route('payment-assistance.thankyou')
             ->with('program_name', $plan->name)
-            ->with('amount', $plan->currency . ' ' . number_format((float) $plan->amount, 0));
+            ->with('amount', $plan->currency.' '.number_format((float) $plan->amount, 0));
     }
 
     public function thankyou(): View
@@ -75,7 +75,7 @@ final class PaymentAssistanceController extends Controller
 
     public function contact(): View
     {
-        $user      = Auth::user();
+        $user = Auth::user();
         $jobSeeker = $user?->jobSeeker;
 
         return view('public.contact', compact('user', 'jobSeeker'));
@@ -85,39 +85,39 @@ final class PaymentAssistanceController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
-            'email'     => ['required', 'email', 'max:255'],
-            'phone'     => ['nullable', 'string', 'max:30'],
-            'whatsapp'  => ['nullable', 'string', 'max:30'],
-            'subject'   => ['required', 'string', 'max:255'],
-            'message'   => ['required', 'string', 'max:2000'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'subject' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:2000'],
         ]);
 
         $enquiry = PaymentAssistanceRequest::create([
-            'type'         => PaymentAssistanceRequest::TYPE_CONTACT,
-            'user_id'      => Auth::id(),
-            'plan_id'      => null,
-            'full_name'    => $validated['full_name'],
-            'email'        => $validated['email'],
-            'phone'        => $validated['phone'] ?? null,
-            'whatsapp'     => $validated['whatsapp'] ?? null,
-            'subject'      => $validated['subject'],
+            'type' => PaymentAssistanceRequest::TYPE_CONTACT,
+            'user_id' => Auth::id(),
+            'plan_id' => null,
+            'full_name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'whatsapp' => $validated['whatsapp'] ?? null,
+            'subject' => $validated['subject'],
             'program_name' => $validated['subject'],
-            'message'      => $validated['message'],
-            'status'       => PaymentAssistanceRequest::STATUS_NEW,
+            'message' => $validated['message'],
+            'status' => PaymentAssistanceRequest::STATUS_NEW,
         ]);
 
         try {
             Mail::to(config('mail.admin_address', config('mail.from.address')))
                 ->send(new PaymentAssistanceAdminMail($enquiry));
         } catch (\Throwable $e) {
-            Log::error('Contact: admin notification failed', ['error' => $e->getMessage()]);
+            Log::error('Contact: admin notification failed', ['exception_class' => $e::class]);
         }
 
         try {
             Mail::to($enquiry->email)
                 ->send(new PaymentAssistanceApplicantMail($enquiry));
         } catch (\Throwable $e) {
-            Log::error('Contact: applicant confirmation failed', ['error' => $e->getMessage()]);
+            Log::error('Contact: applicant confirmation failed', ['exception_class' => $e::class]);
         }
 
         return redirect()->route('contact.thankyou')

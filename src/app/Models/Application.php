@@ -4,14 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Application extends Model
 {
     public const STATUS_APPLIED = 'applied';
+
     public const STATUS_REVIEWING = 'reviewing';
+
     public const STATUS_SHORTLISTED = 'shortlisted';
+
     public const STATUS_PLACED = 'placed';
+
     public const STATUS_NOT_SELECTED = 'not_selected';
+
     public const STATUS_WITHDRAWN = 'withdrawn';
 
     public const STATUSES = [
@@ -63,6 +69,11 @@ final class Application extends Model
     public function jobSeeker(): BelongsTo
     {
         return $this->belongsTo(JobSeeker::class);
+    }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(ApplicationFile::class);
     }
 
     public static function labelFor(string $status): string

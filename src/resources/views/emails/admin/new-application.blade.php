@@ -13,13 +13,9 @@
 
     <table style="width:100%;border-collapse:collapse;font-size:14px;">
         <tr><td style="padding:8px 0;color:#6b7280;width:160px;">Applicant</td><td style="padding:8px 0;color:#111827;font-weight:600;">{{ $applicant?->name ?: 'Not available' }}</td></tr>
-        <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Email</td><td style="padding:8px 0;color:#111827;">{{ $applicant?->email ?: 'Not available' }}</td></tr>
-        <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Telephone</td><td style="padding:8px 0;color:#111827;">{{ $seeker?->phone ?: 'Not provided' }}</td></tr>
         <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Current Program</td><td style="padding:8px 0;color:#111827;">{{ $seeker?->program?->name ?: 'Not selected' }}</td></tr>
         <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Job</td><td style="padding:8px 0;color:#111827;font-weight:600;">{{ $job?->title ?: 'Not available' }}</td></tr>
-        <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Employer / Sponsor</td><td style="padding:8px 0;color:#111827;">{{ $job?->employer?->company_name ?: $job?->employer?->user?->name ?: 'Not available' }}</td></tr>
         <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Submitted</td><td style="padding:8px 0;color:#111827;">{{ $application->applied_at?->format('M d, Y \a\t g:i A T') ?: $application->created_at?->format('M d, Y \a\t g:i A T') }}</td></tr>
-        <tr style="border-top:1px solid #f3f4f6;"><td style="padding:8px 0;color:#6b7280;">Status</td><td style="padding:8px 0;color:#111827;">{{ \App\Models\Application::labelFor($application->status) }}</td></tr>
     </table>
 
     @if($applicant)

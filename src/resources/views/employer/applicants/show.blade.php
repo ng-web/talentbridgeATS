@@ -34,7 +34,7 @@
         <div class="xl:col-span-1 space-y-4">
             <div class="rounded-3xl bg-white p-6 shadow border border-gray-100 text-center">
                 @if($profilePhoto)
-                    <img src="{{ asset('storage/' . $profilePhoto->file_path) }}"
+                    <img src="{{ route('documents.job-seeker', $profilePhoto) }}"
                          alt="{{ $user->name }}"
                          class="w-20 h-20 rounded-2xl object-cover border border-gray-200 mx-auto">
                 @else
@@ -58,13 +58,6 @@
                         <p class="text-gray-500 mt-1">{{ $seeker->location }}</p>
                     @endif
                 </div>
-
-                @if($seeker->date_of_birth)
-                    <div class="pt-3 border-t border-gray-100">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Date of Birth</p>
-                        <p class="text-gray-700">{{ $seeker->date_of_birth->format('M d, Y') }}</p>
-                    </div>
-                @endif
 
                 <div class="pt-3 border-t border-gray-100">
                     <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Application</p>
@@ -94,7 +87,7 @@
                             @endif
                         </div>
                         @if($application->submitted_resume_path)
-                            <a href="{{ asset('storage/'.$application->submitted_resume_path) }}"
+                            <a href="{{ route('documents.application', [$application, 'resume']) }}"
                                target="_blank"
                                class="text-sm font-medium text-[#6f4cb2] hover:underline">View Resume →</a>
                         @endif
@@ -110,7 +103,7 @@
                             @endif
                         </div>
                         @if($application->submitted_cover_letter_path)
-                            <a href="{{ asset('storage/'.$application->submitted_cover_letter_path) }}"
+                            <a href="{{ route('documents.application', [$application, 'cover-letter']) }}"
                                target="_blank"
                                class="text-sm font-medium text-[#6f4cb2] hover:underline">View Letter →</a>
                         @endif
@@ -129,7 +122,7 @@
                         @foreach($certs as $cert)
                             <div class="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50/40 px-4 py-3">
                                 <span class="text-sm font-medium text-gray-900 truncate">{{ $cert->original_name ?: 'Certificate' }}</span>
-                                <a href="{{ asset('storage/'.$cert->file_path) }}"
+                                <a href="{{ route('documents.job-seeker', $cert) }}"
                                    target="_blank"
                                    class="ml-3 shrink-0 text-sm font-medium text-[#6f4cb2] hover:underline">
                                     View →
@@ -142,54 +135,6 @@
                 @endif
             </div>
 
-            {{-- Verification Status (admin-verified compliance — no files exposed) --}}
-            @php
-                $hasIdentity  = ($docsByType[\App\Models\JobSeekerDocument::TYPE_PASSPORT] ?? collect())->isNotEmpty()
-                             || ($docsByType[\App\Models\JobSeekerDocument::TYPE_DRIVERS_LICENSE] ?? collect())->isNotEmpty();
-                $hasPolice    = ($docsByType[\App\Models\JobSeekerDocument::TYPE_POLICE_RECORD] ?? collect())->isNotEmpty();
-                $hasMedical   = ($docsByType[\App\Models\JobSeekerDocument::TYPE_MEDICAL_RECORD] ?? collect())->isNotEmpty();
-            @endphp
-            <div class="rounded-3xl bg-white p-6 shadow border border-gray-100">
-                <h3 class="text-base font-semibold text-gray-900 mb-1">Verification Status</h3>
-                <p class="text-xs text-gray-400 mb-4">Compliance documents are reviewed by Kairox Administration only.</p>
-
-                <div class="space-y-3">
-                    <div class="flex items-center gap-3">
-                        @if($hasIdentity)
-                            <x-heroicon-o-check-circle class="w-5 h-5 text-green-500 shrink-0" />
-                            <span class="text-sm font-medium text-gray-800">Identity Verified</span>
-                        @else
-                            <x-heroicon-o-clock class="w-5 h-5 text-amber-400 shrink-0" />
-                            <span class="text-sm text-gray-500">Identity — Pending</span>
-                        @endif
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        @if($hasPolice)
-                            <x-heroicon-o-check-circle class="w-5 h-5 text-green-500 shrink-0" />
-                            <span class="text-sm font-medium text-gray-800">Background Check Complete</span>
-                        @else
-                            <x-heroicon-o-clock class="w-5 h-5 text-amber-400 shrink-0" />
-                            <span class="text-sm text-gray-500">Background Check — Pending</span>
-                        @endif
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        @if($hasMedical)
-                            <x-heroicon-o-check-circle class="w-5 h-5 text-green-500 shrink-0" />
-                            <span class="text-sm font-medium text-gray-800">Medical Clearance Complete</span>
-                        @else
-                            <x-heroicon-o-clock class="w-5 h-5 text-amber-400 shrink-0" />
-                            <span class="text-sm text-gray-500">Medical Clearance — Pending</span>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
-                    <x-heroicon-o-shield-check class="w-4 h-4 text-gray-400 shrink-0" />
-                    <p class="text-xs text-gray-400">Verified by Kairox Administration</p>
-                </div>
-            </div>
         </div>
 
         {{-- Right: Workflow --}}

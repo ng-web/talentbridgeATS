@@ -143,9 +143,7 @@ final class UserController extends Controller
 
         $user->delete();
 
-        $this->audit('user_soft_deleted', $user, [
-            'target_email' => $user->email,
-        ]);
+        $this->audit('user_soft_deleted', $user);
 
         return redirect()
             ->route('admin.users.index')
@@ -157,9 +155,7 @@ final class UserController extends Controller
         $user = User::onlyTrashed()->findOrFail($id);
         $user->restore();
 
-        $this->audit('user_restored', $user, [
-            'target_email' => $user->email,
-        ]);
+        $this->audit('user_restored', $user);
 
         return redirect()
             ->route('admin.users.deleted')
@@ -180,7 +176,6 @@ final class UserController extends Controller
 
         if (! empty($blockers)) {
             $this->audit('user_force_delete_attempted', $user, [
-                'target_email' => $user->email,
                 'blocked_by' => $blockers,
             ]);
 
@@ -189,8 +184,6 @@ final class UserController extends Controller
 
         $target = [
             'target_user_id' => $user->id,
-            'target_email' => $user->email,
-            'target_name' => $user->name,
         ];
 
         DB::transaction(function () use ($user, $target): void {
@@ -229,7 +222,6 @@ final class UserController extends Controller
 
         Log::warning('Temporary password issued by admin', [
             'target_user_id' => $user->id,
-            'target_email' => $user->email,
             'admin_user_id' => auth()->id(),
         ]);
 
@@ -246,9 +238,8 @@ final class UserController extends Controller
         } catch (Throwable $e) {
             Log::error('Temporary password email failed', [
                 'target_user_id' => $user->id,
-                'target_email' => $user->email,
                 'admin_user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'exception_class' => $e::class,
             ]);
 
             return back()
@@ -268,7 +259,6 @@ final class UserController extends Controller
 
         Log::warning('Password change forced by admin', [
             'target_user_id' => $user->id,
-            'target_email' => $user->email,
             'admin_user_id' => auth()->id(),
         ]);
 
@@ -283,7 +273,6 @@ final class UserController extends Controller
 
         Log::warning('Password change requirement cleared by admin', [
             'target_user_id' => $user->id,
-            'target_email' => $user->email,
             'admin_user_id' => auth()->id(),
         ]);
 
@@ -314,7 +303,6 @@ final class UserController extends Controller
 
         Log::warning('Access granted from user detail page', [
             'target_user_id' => $user->id,
-            'target_email' => $user->email,
             'type' => $validated['type'],
             'admin_user_id' => auth()->id(),
         ]);
@@ -345,7 +333,6 @@ final class UserController extends Controller
 
         Log::warning('Access revoked from user detail page', [
             'target_user_id' => $user->id,
-            'target_email' => $user->email,
             'type' => $type,
             'admin_user_id' => auth()->id(),
         ]);
@@ -389,7 +376,6 @@ final class UserController extends Controller
         };
 
         $this->audit($action, $user, [
-            'target_email' => $user->email,
             'old_program_id' => $oldProgramId,
             'new_program_id' => $newProgramId,
         ]);

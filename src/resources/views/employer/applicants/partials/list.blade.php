@@ -22,7 +22,7 @@
                     <div class="flex items-start gap-4 min-w-0 flex-1">
                         <div class="shrink-0">
                             @if($profilePhoto)
-                                <img src="{{ asset('storage/' . $profilePhoto->file_path) }}"
+                                <img src="{{ route('documents.job-seeker', $profilePhoto) }}"
                                      alt="{{ $application->jobSeeker->user->name }}"
                                      class="w-12 h-12 rounded-xl object-cover border border-gray-200">
                             @else

@@ -21,16 +21,22 @@ final class ApplicantController extends Controller
 
         abort_unless($employer, 404);
 
-        $q      = trim((string) $request->query('q', ''));
-        $jobId  = (int) $request->query('job_id', 0);
+        $q = trim((string) $request->query('q', ''));
+        $jobId = (int) $request->query('job_id', 0);
         $status = trim((string) $request->query('status', ''));
 
         $applications = Application::query()
             ->whereHas('job', fn ($q) => $q->where('employer_id', $employer->id))
             ->whereNotIn('status', [Application::STATUS_WITHDRAWN])
-            ->with(['job', 'jobSeeker.user', 'jobSeeker.documents'])
-            ->when($q !== '', fn ($query) => $query->whereHas('jobSeeker.user', fn ($u) =>
-                $u->where('name', 'like', "%{$q}%")
+            ->with([
+                'job',
+                'jobSeeker.user',
+                'jobSeeker.documents' => fn ($query) => $query->where(
+                    'document_type',
+                    JobSeekerDocument::TYPE_PROFILE_PHOTO,
+                ),
+            ])
+            ->when($q !== '', fn ($query) => $query->whereHas('jobSeeker.user', fn ($u) => $u->where('name', 'like', "%{$q}%")
             ))
             ->when($jobId > 0, fn ($query) => $query->where('job_id', $jobId))
             ->when($status !== '', fn ($query) => $query->where('status', $status))
@@ -54,33 +60,34 @@ final class ApplicantController extends Controller
 
     public function show(Application $application): View
     {
-        $employer = Auth::user()->employer;
+        $this->authorizeActiveOwnedApplication($application);
 
-        abort_unless($employer && $application->job?->employer_id === $employer->id, 403);
+        $application->load([
+            'job',
+            'jobSeeker.user',
+            'jobSeeker.documents' => fn ($query) => $query->whereIn('document_type', [
+                JobSeekerDocument::TYPE_PROFILE_PHOTO,
+                JobSeekerDocument::TYPE_CERTIFICATE,
+            ]),
+        ]);
 
-        $application->load(['job', 'jobSeeker.user', 'jobSeeker.documents']);
+        $docsByType = $application->jobSeeker->documents->groupBy('document_type');
 
-        $docsByType    = $application->jobSeeker->documents->groupBy('document_type');
-        $categories    = JobSeekerDocument::CATEGORIES;
-
-        return view('employer.applicants.show', compact('application', 'docsByType', 'categories'));
+        return view('employer.applicants.show', compact('application', 'docsByType'));
     }
 
     public function updateStatus(Request $request, Application $application): RedirectResponse
     {
-        $employer = Auth::user()->employer;
-
-        abort_unless($employer, 403);
-        abort_unless($application->job?->employer_id === $employer->id, 403);
+        $this->authorizeActiveOwnedApplication($application);
 
         $request->validate([
-            'status' => ['required', 'string', 'in:' . implode(',', Application::EMPLOYER_STATUSES)],
-            'notes'  => ['nullable', 'string', 'max:2000'],
+            'status' => ['required', 'string', 'in:'.implode(',', Application::EMPLOYER_STATUSES)],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $application->update([
             'status' => $request->string('status')->toString(),
-            'notes'  => $request->string('notes')->toString() ?: null,
+            'notes' => $request->string('notes')->toString() ?: null,
         ]);
 
         $jobSeekerUser = $application->jobSeeker?->user;
@@ -90,5 +97,17 @@ final class ApplicantController extends Controller
         }
 
         return back()->with('status', 'Applicant status updated.');
+    }
+
+    private function authorizeActiveOwnedApplication(Application $application): void
+    {
+        $employer = Auth::user()->employer;
+
+        abort_unless(
+            $employer
+            && $application->status !== Application::STATUS_WITHDRAWN
+            && $application->job?->employer_id === $employer->id,
+            403,
+        );
     }
 }

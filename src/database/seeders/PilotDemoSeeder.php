@@ -10,6 +10,7 @@ use App\Models\JobSeeker;
 use App\Models\Payment;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\Documents\ApplicantDocumentStorage;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -20,30 +21,51 @@ final class PilotDemoSeeder extends Seeder
     {
         $program = Program::query()->first();
 
-        if (!$program) {
+        if (! $program) {
             $this->command?->error('No Program records found. Run ProgramSeeder first.');
+
             return;
         }
 
-        Storage::disk('public')->put(
-            'demo/seeker-pro-resume.txt',
-            "Demo Resume\n\nName: Seeker Pro\nExperience: Hospitality, Customer Service"
+        $applicantStorage = app(ApplicantDocumentStorage::class);
+        if (! $applicantStorage->ensurePrivateRoot()) {
+            throw new \RuntimeException('The private applicant storage root could not be secured.');
+        }
+
+        Storage::disk('private')->put(
+            'applicants/demo/seeker-pro/profile/resume.txt',
+            "Demo Resume\n\nName: Seeker Pro\nExperience: Hospitality, Customer Service",
+            'private',
         );
 
-        Storage::disk('public')->put(
-            'demo/seeker-pro-cover-letter.txt',
-            "Demo Cover Letter\n\nI am interested in the opportunity and available to travel."
+        Storage::disk('private')->put(
+            'applicants/demo/seeker-pro/profile/cover-letter.txt',
+            "Demo Cover Letter\n\nI am interested in the opportunity and available to travel.",
+            'private',
         );
 
-        Storage::disk('public')->put(
-            'demo/seeker-new-resume.txt',
-            "Demo Resume\n\nName: Seeker New\nExperience: Entry-level applicant"
+        Storage::disk('private')->put(
+            'applicants/demo/seeker-new/profile/resume.txt',
+            "Demo Resume\n\nName: Seeker New\nExperience: Entry-level applicant",
+            'private',
         );
 
-        Storage::disk('public')->put(
-            'demo/seeker-new-cover-letter.txt',
-            "Demo Cover Letter\n\nExcited to begin my journey through Kairox Exchange."
+        Storage::disk('private')->put(
+            'applicants/demo/seeker-new/profile/cover-letter.txt',
+            "Demo Cover Letter\n\nExcited to begin my journey through Kairox Exchange.",
+            'private',
         );
+
+        foreach ([
+            'applicants/demo/seeker-pro/profile/resume.txt',
+            'applicants/demo/seeker-pro/profile/cover-letter.txt',
+            'applicants/demo/seeker-new/profile/resume.txt',
+            'applicants/demo/seeker-new/profile/cover-letter.txt',
+        ] as $path) {
+            if (! $applicantStorage->enforcePrivateVisibility($path)) {
+                throw new \RuntimeException('A synthetic applicant document could not be stored privately.');
+            }
+        }
 
         $admin = User::updateOrCreate(
             ['email' => 'admin@kairox.test'],
@@ -109,8 +131,8 @@ final class PilotDemoSeeder extends Seeder
         $jobSeekerWithAccess = JobSeeker::updateOrCreate(
             ['user_id' => $seekerWithAccessUser->id],
             [
-                'resume_path' => 'demo/seeker-pro-resume.txt',
-                'cover_letter_path' => 'demo/seeker-pro-cover-letter.txt',
+                'resume_path' => 'applicants/demo/seeker-pro/profile/resume.txt',
+                'cover_letter_path' => 'applicants/demo/seeker-pro/profile/cover-letter.txt',
                 'profile_completeness' => 85,
             ]
         );
@@ -118,8 +140,8 @@ final class PilotDemoSeeder extends Seeder
         $jobSeekerNoAccess = JobSeeker::updateOrCreate(
             ['user_id' => $seekerNoAccessUser->id],
             [
-                'resume_path' => 'demo/seeker-new-resume.txt',
-                'cover_letter_path' => 'demo/seeker-new-cover-letter.txt',
+                'resume_path' => 'applicants/demo/seeker-new/profile/resume.txt',
+                'cover_letter_path' => 'applicants/demo/seeker-new/profile/cover-letter.txt',
                 'profile_completeness' => 65,
             ]
         );
@@ -266,8 +288,8 @@ final class PilotDemoSeeder extends Seeder
             [
                 'status' => Application::STATUS_APPLIED,
                 'applied_at' => now()->subHours(12),
-                'submitted_resume_path' => 'demo/seeker-pro-resume.txt',
-                'submitted_cover_letter_path' => 'demo/seeker-pro-cover-letter.txt',
+                'submitted_resume_path' => 'applicants/demo/seeker-pro/profile/resume.txt',
+                'submitted_cover_letter_path' => 'applicants/demo/seeker-pro/profile/cover-letter.txt',
             ]
         );
 
@@ -279,8 +301,8 @@ final class PilotDemoSeeder extends Seeder
             [
                 'status' => Application::STATUS_SHORTLISTED,
                 'applied_at' => now()->subHours(6),
-                'submitted_resume_path' => 'demo/seeker-new-resume.txt',
-                'submitted_cover_letter_path' => 'demo/seeker-new-cover-letter.txt',
+                'submitted_resume_path' => 'applicants/demo/seeker-new/profile/resume.txt',
+                'submitted_cover_letter_path' => 'applicants/demo/seeker-new/profile/cover-letter.txt',
             ]
         );
     }

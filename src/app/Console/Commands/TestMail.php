@@ -28,13 +28,12 @@ final class TestMail extends Command
             return self::FAILURE;
         }
 
-        $this->info("Sending Kairox test email to {$recipient}...");
+        $this->info('Sending Kairox test email to the configured admin recipient...');
 
         try {
             Mail::to($recipient)->send(new KairoxTestMail);
 
             Log::info('Kairox mail test dispatched', [
-                'recipient' => $recipient,
                 'mailable' => KairoxTestMail::class,
             ]);
 
@@ -43,9 +42,7 @@ final class TestMail extends Command
             return self::SUCCESS;
         } catch (Throwable $e) {
             Log::error('Kairox mail test failed', [
-                'recipient' => $recipient,
                 'exception_class' => $e::class,
-                'message' => $e->getMessage(),
             ]);
 
             $this->error('Test email dispatch failed. Check the Laravel log for details.');

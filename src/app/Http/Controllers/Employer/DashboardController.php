@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\Employer;
 use App\Models\Entitlement;
 use App\Models\Job;
+use App\Models\JobSeekerDocument;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,7 +44,14 @@ final class DashboardController extends Controller
             ->pluck('total', 'status');
 
         $recentApplicants = Application::query()
-            ->with(['jobSeeker.user', 'jobSeeker.documents', 'job'])
+            ->with([
+                'jobSeeker.user',
+                'jobSeeker.documents' => fn ($query) => $query->where(
+                    'document_type',
+                    JobSeekerDocument::TYPE_PROFILE_PHOTO,
+                ),
+                'job',
+            ])
             ->whereHas('job', fn ($q) => $q->where('employer_id', $employer->id))
             ->whereNotIn('status', [Application::STATUS_WITHDRAWN])
             ->latest()

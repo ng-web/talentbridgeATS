@@ -47,7 +47,7 @@ Capabilities:
 - Manually grant and revoke entitlements
 - Manage reference data (countries, locations, categories, employment types)
 - View platform-wide metrics and Action Required notifications
-- Issue temporary passwords to provisioned accounts
+- Send single-use, expiring account setup links without issuing plaintext temporary passwords
 
 ### Employer
 Organizations posting opportunities and managing applicants.

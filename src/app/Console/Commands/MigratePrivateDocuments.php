@@ -4,11 +4,11 @@ namespace App\Console\Commands;
 
 use App\Models\Application;
 use App\Models\ApplicationFile;
-use App\Models\AuditLog;
 use App\Models\JobSeeker;
 use App\Models\JobSeekerDocument;
 use App\Services\Documents\ApplicantDocumentLifecycle;
 use App\Services\Documents\ApplicantDocumentStorage;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +34,7 @@ final class MigratePrivateDocuments extends Command
     public function __construct(
         private readonly ApplicantDocumentLifecycle $lifecycle,
         private readonly ApplicantDocumentStorage $storage,
+        private readonly PrivacyAuditService $audit,
     ) {
         parent::__construct();
     }
@@ -284,17 +285,16 @@ final class MigratePrivateDocuments extends Command
                     throw new RuntimeException('Document reference changed during migration.');
                 }
 
-                AuditLog::create([
-                    'actor_user_id' => null,
-                    'action' => 'applicant_document_migrated_private',
-                    'entity_type' => $model::class,
-                    'entity_id' => $model->getKey(),
-                    'meta' => [
+                $this->audit->record(
+                    event: 'applicant_document_migrated_private',
+                    resource: $model,
+                    reasonCode: 'private_migration_verified',
+                    metadata: [
                         'document_category' => $category,
                         'source_disk' => ApplicantDocumentStorage::LEGACY_PUBLIC_DISK,
                         'destination_disk' => ApplicantDocumentStorage::PRIVATE_DISK,
                     ],
-                ]);
+                );
 
                 $this->lifecycle->deleteAfterCommit($source);
             });

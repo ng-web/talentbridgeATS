@@ -10,10 +10,14 @@ This is an engineering control description for a future processor agreement. It 
 - Limit production and applicant-document access to authorized personnel with a work-related need; bind personnel to confidentiality obligations.
 - Store applicant uploads on Laravel's non-served `private` disk. Use randomized server-side paths and authenticated, authorized streamed delivery rather than public URLs.
 - Apply least privilege by role. Applicants access their own records; employers access only explicitly allowed documents for non-withdrawn applications belonging to their employer; admins require authenticated admin authorization. Employer access defaults to deny.
+- Require per-session, security-version-bound Laravel Fortify MFA assurance for administrator application access; remembered identity alone is never MFA assurance. Protect administrator security changes with explicit Spatie permissions and Laravel password confirmation; future privacy permissions remain unassigned by default.
 - Keep passports, driver's licences, police records, and medical records unavailable to employers by default. High-risk downloads generate minimized audit events.
 - Do not expose an applicant's date of birth or the existence of identity, police, or medical uploads to employers. Direct email and phone remain temporarily available because the current recruitment workflow has no portal messaging feature; Kairox must confirm and document the business/legal need or require their removal.
 - Protect traffic with HTTPS and secure session settings. Production must use `APP_ENV=production`, `APP_DEBUG=false`, the production HTTPS `APP_URL`, secure/HTTP-only cookies, and trusted-proxy configuration appropriate to the Caddy/Cloudflare path.
 - Minimize logs and new payment-provider metadata. Do not log document contents/paths, callback payloads, customer contact details, hashes, secrets, credentials, or raw provider responses.
+- Use the centralized privacy/security audit service for allowlisted security events, correlation IDs, outcomes, and reason codes. Reject non-allowlisted metadata and never audit passwords, setup tokens, MFA secrets/recovery codes, session identifiers, or unrestricted exception messages.
+- Provision accounts using signed, opaque, expiring, single-use setup links backed by Laravel's password broker. Do not email, display, log, or flash plaintext temporary passwords. Recursively fail closed on logging mail transports, apply `no-referrer` and browser-history replacement to token pages, suppress origin access logs for token-bearing setup/reset paths, and treat Cloudflare/WAF/Logpush/analytics/Workers URI redaction as a separately verified production gate.
+- Invalidate security-sensitive sessions with a logical account security version, remember-token rotation, and best-effort physical deletion through the configured session connection.
 - Keep new database backups owner-readable only (`0600`) in a restricted directory (`0700`). Kairox must approve retention duration. Encryption needs an approved key-management design; restore capability must be tested on synthetic or authorized data.
 - Maintain supported dependencies, apply security updates under change control, review vulnerability findings, and regression-test authorization and file lifecycle behavior.
 - Escalate suspected security/privacy incidents to Kairox without making the legal reportability decision. Preserve evidence according to `PRIVACY_INCIDENT_PRESERVATION.md`.
@@ -33,7 +37,7 @@ Kairox must approve the DPA, documented instructions, retention periods, subproc
 
 ## Engineering follow-up beyond Sprint 1
 
-- P1: replace emailed plaintext temporary passwords with Laravel's signed, one-time password-setup/reset flow.
+- Implemented in P1 Pass 1: administrator MFA, secure setup links, session invalidation, granular future privacy permissions, privileged reauthentication, and centralized security auditing. Operational permission assignment and recovery remain subject to Kairox approval.
 - P1: design a real reviewer decision model before any UI may say a document is verified, valid, approved, passed, or cleared.
 - P1: inventory and govern historical raw WiPay payloads without deleting them until Kairox approves retention and evidence handling.
 - P1: add an approved backup inventory/rotation schedule and tested encryption key-management design.

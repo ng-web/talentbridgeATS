@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\PrivacySecurityPermissions;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -36,13 +37,29 @@ final class RolesAndPermissionsSeeder extends Seeder
 
             'payments.view_own',
             'entitlements.manage',
+            ...PrivacySecurityPermissions::all(),
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        $admin->syncPermissions(Permission::all());
+        $admin->syncPermissions([
+            'admin.panel',
+            'programs.view',
+            'jobs.view',
+            'jobs.create',
+            'jobs.update_own',
+            'jobs.view_own',
+            'applications.create',
+            'applications.view_own',
+            'applications.manage_own_jobs',
+            'profile.update_own',
+            'files.upload_own',
+            'payments.view_own',
+            'entitlements.manage',
+            PrivacySecurityPermissions::ADMIN_SECURITY_SELF,
+        ]);
 
         $employer->syncPermissions([
             'jobs.create',

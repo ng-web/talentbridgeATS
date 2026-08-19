@@ -106,7 +106,7 @@ final class PrivacyRemediationTest extends TestCase
         [$other] = $this->applicant('other-applicant@example.test');
         [$relatedEmployer, $relatedEmployerModel] = $this->employer('related-employer@example.test');
         [$unrelatedEmployer] = $this->employer('unrelated-employer@example.test');
-        $admin = $this->roleUser('admin', 'privacy-admin@example.test');
+        $admin = $this->enrollAdministratorMfa($this->roleUser('admin', 'privacy-admin@example.test'));
         $job = $this->job($relatedEmployerModel);
         $application = Application::create([
             'job_id' => $job->id,
@@ -141,7 +141,7 @@ final class PrivacyRemediationTest extends TestCase
         $this->actingAs($unrelatedEmployer)->get(route('documents.job-seeker', $certificate))->assertForbidden();
         $this->actingAs($unrelatedEmployer)->get(route('documents.application', [$application, 'resume']))->assertForbidden();
 
-        $this->actingAs($admin)->get(route('documents.job-seeker', $passport))->assertOk();
+        $this->actingAsMfaVerified($admin)->get(route('documents.job-seeker', $passport))->assertOk();
         $audit = \App\Models\AuditLog::query()->latest('id')->firstOrFail();
         $this->assertSame('sensitive_document_downloaded', $audit->action);
         $this->assertSame(JobSeekerDocument::TYPE_PASSPORT, $audit->meta['document_type']);
@@ -371,7 +371,7 @@ final class PrivacyRemediationTest extends TestCase
         [$owner, $jobSeeker] = $this->applicant('withdrawn-owner@example.test');
         [$employerUser, $employer] = $this->employer('withdrawn-employer@example.test');
         [$unrelatedEmployer] = $this->employer('withdrawn-unrelated@example.test');
-        $admin = $this->roleUser('admin', 'withdrawn-admin@example.test');
+        $admin = $this->enrollAdministratorMfa($this->roleUser('admin', 'withdrawn-admin@example.test'));
         $this->grantAccess($employerUser, Entitlement::TYPE_EMPLOYER_POSTING_ACCESS);
         $this->grantAccess($unrelatedEmployer, Entitlement::TYPE_EMPLOYER_POSTING_ACCESS);
         $application = Application::create([
@@ -393,7 +393,7 @@ final class PrivacyRemediationTest extends TestCase
         $this->actingAs($employerUser)->get(route('documents.application', [$application, 'resume']))->assertForbidden();
         $this->actingAs($employerUser)->get(route('documents.job-seeker', $certificate))->assertForbidden();
         $this->actingAs($owner)->get(route('documents.application', [$application, 'resume']))->assertOk();
-        $this->actingAs($admin)->get(route('documents.application', [$application, 'resume']))->assertOk();
+        $this->actingAsMfaVerified($admin)->get(route('documents.application', [$application, 'resume']))->assertOk();
     }
 
     public function test_private_writes_have_private_visibility_and_restrictive_local_modes(): void

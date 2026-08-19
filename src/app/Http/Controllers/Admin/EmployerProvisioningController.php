@@ -4,17 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Payments\ActivateEntitlementFromPayment;
 use App\Http\Controllers\Controller;
-use App\Mail\EmployerProvisionedMail;
 use App\Models\Employer;
 use App\Models\Entitlement;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Services\Security\AccountSetupService;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Throwable;
@@ -23,6 +24,8 @@ final class EmployerProvisioningController extends Controller
 {
     public function __construct(
         private readonly ActivateEntitlementFromPayment $activateEntitlement,
+        private readonly AccountSetupService $accountSetup,
+        private readonly PrivacyAuditService $audit,
     ) {}
 
     public function create(): View
@@ -57,7 +60,6 @@ final class EmployerProvisioningController extends Controller
             $validated['website'] = 'https://'.ltrim($validated['website'], '/');
         }
 
-        $temporaryPassword = Str::password(12);
         $user = null;
 
         try {
@@ -66,7 +68,7 @@ final class EmployerProvisioningController extends Controller
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => $temporaryPassword,
+                'password' => Hash::make(bin2hex(random_bytes(32))),
                 'must_change_password' => true,
             ]);
 
@@ -83,7 +85,9 @@ final class EmployerProvisioningController extends Controller
                 'billing_status' => 'pending',
             ]);
 
-            if (($validated['grant_access_now'] ?? false) && ! empty($validated['plan_id'])) {
+            $accessGranted = ($validated['grant_access_now'] ?? false) && ! empty($validated['plan_id']);
+
+            if ($accessGranted) {
                 $plan = Plan::query()->findOrFail($validated['plan_id']);
 
                 $payment = Payment::create([
@@ -112,6 +116,18 @@ final class EmployerProvisioningController extends Controller
                 $this->activateEntitlement->handle($payment, 'admin_provisioning');
             }
 
+            $this->audit->record(
+                event: 'employer_account_provisioned',
+                actor: $request->user(),
+                resource: $user,
+                subjectUserId: $user->id,
+                reasonCode: 'authorized_admin_provisioning',
+                metadata: [
+                    'account_role' => 'employer',
+                    'access_granted' => $accessGranted,
+                ],
+            );
+
             DB::commit();
         } catch (Throwable $e) {
             DB::rollBack();
@@ -126,17 +142,11 @@ final class EmployerProvisioningController extends Controller
         }
 
         try {
-            Mail::to($user->email)->send(
-                new EmployerProvisionedMail(
-                    user: $user,
-                    temporaryPassword: $temporaryPassword,
-                    loginUrl: route('login'),
-                )
-            );
+            $this->accountSetup->issue($user, $request->user());
 
             return redirect()
                 ->route('admin.entitlements.index')
-                ->with('success', 'Employer/sponsor account created and login details emailed successfully.');
+                ->with('success', 'Employer/sponsor account created and a secure, expiring setup link was emailed.');
         } catch (Throwable $e) {
             Log::error('Employer provisioning email failed after account creation', [
                 'user_id' => $user->id,
@@ -145,7 +155,7 @@ final class EmployerProvisioningController extends Controller
 
             return redirect()
                 ->route('admin.entitlements.index')
-                ->with('error', 'Employer/sponsor account was created, but the login email could not be sent. You may need to reset the password or resend credentials manually.');
+                ->with('error', 'Employer/sponsor account was created in a locked setup state, but the setup email could not be sent. Reissue the secure setup link from the user record.');
         }
     }
 }

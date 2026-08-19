@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminMfaController;
+use App\Http\Controllers\Admin\AdminMfaRecoveryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EmployerProvisioningController;
 use App\Http\Controllers\Admin\JobController as AdminJobController;
@@ -40,7 +42,7 @@ Route::get('/contact/thank-you', [PaymentAssistanceController::class, 'contactTh
 Route::post('/payments/wipay/callback', [\App\Http\Controllers\Payment\CheckoutController::class, 'callback'])
     ->name('payments.wipay.callback');
 
-Route::middleware(['auth', 'password.change.required'])->group(function () {
+Route::middleware(['auth', 'security.session', 'password.change.required', 'administrator.mfa'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/documents/job-seeker/{document}', [DocumentDownloadController::class, 'jobSeekerDocument'])
@@ -120,23 +122,38 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
         Route::get('/users/deleted', [\App\Http\Controllers\Admin\UserController::class, 'deleted'])->name('users.deleted');
         Route::get('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
-        Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
-        Route::patch('/users/{id}/restore', [\App\Http\Controllers\Admin\UserController::class, 'restore'])->name('users.restore');
-        Route::delete('/users/{id}/force', [\App\Http\Controllers\Admin\UserController::class, 'forceDelete'])->name('users.force-delete');
+        Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])
+            ->middleware('password.confirm')
+            ->name('users.destroy');
+        Route::patch('/users/{id}/restore', [\App\Http\Controllers\Admin\UserController::class, 'restore'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
+            ->name('users.restore');
+        Route::delete('/users/{id}/force', [\App\Http\Controllers\Admin\UserController::class, 'forceDelete'])
+            ->middleware('password.confirm')
+            ->name('users.force-delete');
 
-        Route::post('/users/{user}/issue-temporary-password', [\App\Http\Controllers\Admin\UserController::class, 'issueTemporaryPassword'])
-            ->name('users.issue-temporary-password');
+        Route::delete('/security/users/{user}/mfa', [AdminMfaRecoveryController::class, 'destroy'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
+            ->name('security.users.mfa.destroy');
+
+        Route::post('/users/{user}/send-account-setup-link', [\App\Http\Controllers\Admin\UserController::class, 'sendAccountSetupLink'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
+            ->name('users.send-account-setup-link');
 
         Route::patch('/users/{user}/force-password-change', [\App\Http\Controllers\Admin\UserController::class, 'forcePasswordChange'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
             ->name('users.force-password-change');
 
         Route::patch('/users/{user}/clear-password-change', [\App\Http\Controllers\Admin\UserController::class, 'clearPasswordChange'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
             ->name('users.clear-password-change');
 
         Route::post('/users/{user}/grant-access', [\App\Http\Controllers\Admin\UserController::class, 'grantAccess'])
+            ->middleware(['permission:entitlements.manage', 'password.confirm'])
             ->name('users.grant-access');
 
         Route::delete('/users/{user}/revoke-access/{type}', [\App\Http\Controllers\Admin\UserController::class, 'revokeAccess'])
+            ->middleware(['permission:entitlements.manage', 'password.confirm'])
             ->name('users.revoke-access');
 
         Route::patch('/users/{user}/program', [\App\Http\Controllers\Admin\UserController::class, 'updateProgram'])
@@ -148,11 +165,19 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         Route::patch('/jobs/{job}/archive', [AdminJobController::class, 'archive'])->name('jobs.archive');
 
         Route::get('/entitlements', [\App\Http\Controllers\Admin\EntitlementController::class, 'index'])->name('entitlements.index');
-        Route::post('/entitlements', [\App\Http\Controllers\Admin\EntitlementController::class, 'store'])->name('entitlements.store');
-        Route::delete('/entitlements/{entitlement}', [\App\Http\Controllers\Admin\EntitlementController::class, 'destroy'])->name('entitlements.destroy');
+        Route::post('/entitlements', [\App\Http\Controllers\Admin\EntitlementController::class, 'store'])
+            ->middleware(['permission:entitlements.manage', 'password.confirm'])
+            ->name('entitlements.store');
+        Route::delete('/entitlements/{entitlement}', [\App\Http\Controllers\Admin\EntitlementController::class, 'destroy'])
+            ->middleware(['permission:entitlements.manage', 'password.confirm'])
+            ->name('entitlements.destroy');
 
-        Route::get('/employers/create', [EmployerProvisioningController::class, 'create'])->name('employers.create');
-        Route::post('/employers', [EmployerProvisioningController::class, 'store'])->name('employers.store');
+        Route::get('/employers/create', [EmployerProvisioningController::class, 'create'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
+            ->name('employers.create');
+        Route::post('/employers', [EmployerProvisioningController::class, 'store'])
+            ->middleware(['permission:admin.security.manage', 'password.confirm'])
+            ->name('employers.store');
 
         Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
         Route::post('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('payments.store');
@@ -192,7 +217,21 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::patch('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware([
+    'auth',
+    'security.session',
+    'password.change.required',
+    'role:admin',
+    'permission:admin.security.self',
+    'password.confirm',
+])->prefix('admin/security')->name('admin.security.')->group(function () {
+    Route::get('/mfa', [AdminMfaController::class, 'show'])->name('mfa.show');
+    Route::post('/mfa', [AdminMfaController::class, 'start'])->name('mfa.start');
+    Route::post('/mfa/confirm', [AdminMfaController::class, 'confirm'])->name('mfa.confirm');
+    Route::post('/mfa/recovery-codes', [AdminMfaController::class, 'regenerate'])->name('mfa.recovery-codes');
+});
+
+Route::middleware(['auth', 'security.session'])->group(function () {
     Route::get('/force-change-password', [ForcedPasswordChangeController::class, 'edit'])->name('forced-password.edit');
     Route::put('/force-change-password', [ForcedPasswordChangeController::class, 'update'])->name('forced-password.update');
 });

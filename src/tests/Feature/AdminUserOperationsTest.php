@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Program;
 use App\Models\User;
+use App\Support\PrivacySecurityPermissions;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,8 @@ final class AdminUserOperationsTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->admin = User::factory()->create(['name' => 'Operations Admin']);
         $this->admin->assignRole('admin');
+        $this->admin = $this->enrollAdministratorMfa($this->admin);
+        $this->admin->givePermissionTo(PrivacySecurityPermissions::ADMIN_SECURITY_MANAGE);
     }
 
     public function test_admin_detail_and_list_show_applicant_program_phone_and_fallbacks(): void
@@ -41,7 +44,7 @@ final class AdminUserOperationsTest extends TestCase
         $applicant = $this->applicant('Applicant With Details', 'applicant@example.com', $program, '+1 876 555 0100');
         $legacy = $this->applicant('Legacy Applicant', 'legacy@example.com');
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.show', $applicant))
             ->assertOk()
             ->assertSeeText('+1 876 555 0100')
@@ -49,13 +52,13 @@ final class AdminUserOperationsTest extends TestCase
             ->assertSeeText('Current Program')
             ->assertSeeText('Move to Recycle Bin');
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.show', $legacy))
             ->assertOk()
             ->assertSee('Not provided')
             ->assertSee('Not selected');
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.index'))
             ->assertOk()
             ->assertSeeText('+1 876 555 0100')
@@ -70,7 +73,7 @@ final class AdminUserOperationsTest extends TestCase
         $second = $this->program('Camp Counselor', 'camp-counselor');
         $applicant = $this->applicant('Program Update Applicant', 'program-update@example.com');
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->patch(route('admin.users.update-program', $applicant), ['program_id' => $first->id])
             ->assertSessionHasNoErrors();
 
@@ -91,7 +94,7 @@ final class AdminUserOperationsTest extends TestCase
         $applicant = $this->applicant('Inactive Program Applicant', 'inactive-program@example.com', $program);
         $program->update(['is_active' => false]);
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.show', $applicant))
             ->assertOk()
             ->assertSeeText('Summer Work & Travel Program (Inactive)')
@@ -159,7 +162,7 @@ final class AdminUserOperationsTest extends TestCase
             'status' => Payment::STATUS_PAID,
         ]);
 
-        $response = $this->actingAs($this->admin)->get(route('admin.users.index', [
+        $response = $this->actingAsMfaVerified($this->admin)->get(route('admin.users.index', [
             'program' => $program->id,
             'access' => 'active',
             'payment' => Payment::STATUS_PAID,
@@ -248,7 +251,7 @@ final class AdminUserOperationsTest extends TestCase
         ];
 
         foreach ($namesByState as $state => $expectedName) {
-            $response = $this->actingAs($this->admin)->get(route('admin.users.index', [
+            $response = $this->actingAsMfaVerified($this->admin)->get(route('admin.users.index', [
                 'role' => 'job_seeker',
                 'access' => $state,
             ]));
@@ -293,7 +296,7 @@ final class AdminUserOperationsTest extends TestCase
             'applied_at' => now(),
         ]);
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.show', $applicant))
             ->assertOk()
             ->assertSee('Cultural Exchange &amp; Volunteer', false)
@@ -311,7 +314,7 @@ final class AdminUserOperationsTest extends TestCase
         $employerUser->assignRole('employer');
         Employer::create(['user_id' => $employerUser->id, 'company_name' => 'Sponsor Company']);
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.index', ['role' => 'employer']))
             ->assertOk()
             ->assertSee('Sponsor Company')
@@ -342,7 +345,7 @@ final class AdminUserOperationsTest extends TestCase
             'source' => 'test',
         ]);
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->get(route('admin.users.index', ['role' => 'job_seeker']))
             ->assertOk()
             ->assertSeeText('Expired Access Applicant')
@@ -388,7 +391,7 @@ final class AdminUserOperationsTest extends TestCase
             'file_path' => 'documents/passport.pdf',
         ]);
 
-        $this->actingAs($this->admin)->delete(route('admin.users.destroy', $applicant))->assertRedirect(route('admin.users.index'));
+        $this->actingAsMfaVerified($this->admin)->delete(route('admin.users.destroy', $applicant))->assertRedirect(route('admin.users.index'));
 
         $this->assertSoftDeleted('users', ['id' => $applicant->id]);
         $this->assertDatabaseHas('payments', ['id' => $payment->id]);
@@ -410,7 +413,7 @@ final class AdminUserOperationsTest extends TestCase
         ]);
         $applicant->delete();
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->delete(route('admin.users.force-delete', $applicant->id))
             ->assertSessionHas('error');
 
@@ -430,7 +433,7 @@ final class AdminUserOperationsTest extends TestCase
         ]);
         $target->delete();
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->delete(route('admin.users.force-delete', $target->id))
             ->assertSessionHas('error');
 
@@ -463,7 +466,7 @@ final class AdminUserOperationsTest extends TestCase
         ]);
         $target->delete();
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->delete(route('admin.users.force-delete', $target->id))
             ->assertRedirect(route('admin.users.deleted'))
             ->assertSessionHas('success');
@@ -478,7 +481,7 @@ final class AdminUserOperationsTest extends TestCase
         $backupAdmin = User::factory()->create(['name' => 'Backup Admin']);
         $backupAdmin->assignRole('admin');
 
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->delete(route('admin.users.destroy', $this->admin))
             ->assertSessionHas('error', 'You cannot move your own account to the recycle bin.');
 
@@ -487,7 +490,7 @@ final class AdminUserOperationsTest extends TestCase
 
     public function test_final_active_admin_cannot_be_moved_to_recycle_bin(): void
     {
-        $this->actingAs($this->admin)
+        $this->actingAsMfaVerified($this->admin)
             ->delete(route('admin.users.destroy', $this->admin))
             ->assertSessionHas('error', 'You cannot move the final active admin account to the recycle bin.');
 

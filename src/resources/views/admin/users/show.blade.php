@@ -17,28 +17,6 @@
             </div>
         @endif
 
-        @if(session('provisioned_credentials'))
-            <div class="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow">
-                <h3 class="text-lg font-semibold text-amber-900">Temporary Credentials</h3>
-
-                <p class="mt-2 text-sm text-amber-800">
-                    Email could not be sent. Copy these credentials now and share them securely.
-                </p>
-
-                <div class="mt-4 rounded-2xl bg-white/70 border border-amber-200 p-4 text-sm text-amber-900 space-y-2">
-                    <p>
-                        <span class="font-semibold">Email:</span>
-                        {{ session('provisioned_credentials.email') }}
-                    </p>
-
-                    <p>
-                        <span class="font-semibold">Temporary Password:</span>
-                        {{ session('provisioned_credentials.temporary_password') }}
-                    </p>
-                </div>
-            </div>
-        @endif
-
         @php
             $role = $user->roles->first()?->name;
             $roleLabel = match($role) {
@@ -207,55 +185,63 @@
                         </h4>
 
                         <p class="mt-1 text-sm text-gray-500">
-                            Use these actions when a user did not receive login details or needs a forced password reset.
+                            Security changes require explicit permission and recent password confirmation.
                         </p>
 
                         <div class="mt-4 space-y-3">
-                            <form method="POST"
-                                  action="{{ route('admin.users.issue-temporary-password', $user) }}"
-                                  onsubmit="return confirm('Issue a new temporary password for {{ addslashes($user->name) }}? The user will be required to change it on login.');">
-                                @csrf
-
-                                <x-likeslocale.button
-                                    type="submit"
-                                    variant="accent"
-                                    class="w-full justify-center"
-                                >
-                                    Issue Temporary Password
-                                </x-likeslocale.button>
-                            </form>
-
-                            @if(!($user->must_change_password ?? false))
+                            @can('admin.security.manage')
                                 <form method="POST"
-                                      action="{{ route('admin.users.force-password-change', $user) }}"
-                                      onsubmit="return confirm('Force {{ addslashes($user->name) }} to change their password on next login?');">
+                                      action="{{ route('admin.users.send-account-setup-link', $user) }}"
+                                      onsubmit="return confirm('Invalidate existing credentials and sessions, then email a single-use account setup link?');">
                                     @csrf
-                                    @method('PATCH')
 
                                     <x-likeslocale.button
                                         type="submit"
-                                        variant="secondary"
+                                        variant="accent"
                                         class="w-full justify-center"
                                     >
-                                        Force Password Change
+                                        Send Secure Setup Link
                                     </x-likeslocale.button>
                                 </form>
+
+                                @if(!($user->must_change_password ?? false))
+                                    <form method="POST"
+                                          action="{{ route('admin.users.force-password-change', $user) }}"
+                                          onsubmit="return confirm('Force {{ addslashes($user->name) }} to change their password and revoke existing sessions?');">
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <x-likeslocale.button type="submit" variant="secondary" class="w-full justify-center">
+                                            Force Password Change
+                                        </x-likeslocale.button>
+                                    </form>
+                                @else
+                                    <form method="POST"
+                                          action="{{ route('admin.users.clear-password-change', $user) }}"
+                                          onsubmit="return confirm('Clear the password change requirement for {{ addslashes($user->name) }}?');">
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <x-likeslocale.button type="submit" variant="secondary" class="w-full justify-center">
+                                            Clear Password Requirement
+                                        </x-likeslocale.button>
+                                    </form>
+                                @endif
+
+                                @if($role === 'admin' && $user->hasEnabledTwoFactorAuthentication() && !auth()->user()->is($user))
+                                    <form method="POST"
+                                          action="{{ route('admin.security.users.mfa.destroy', $user) }}"
+                                          onsubmit="return confirm('Reset this administrator MFA and revoke all sessions? They must enroll again before accessing admin features.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <x-likeslocale.button type="submit" variant="danger" class="w-full justify-center">
+                                            Reset Administrator MFA
+                                        </x-likeslocale.button>
+                                    </form>
+                                @endif
                             @else
-                                <form method="POST"
-                                      action="{{ route('admin.users.clear-password-change', $user) }}"
-                                      onsubmit="return confirm('Clear the password change requirement for {{ addslashes($user->name) }}?');">
-                                    @csrf
-                                    @method('PATCH')
-
-                                    <x-likeslocale.button
-                                        type="submit"
-                                        variant="secondary"
-                                        class="w-full justify-center"
-                                    >
-                                        Clear Password Requirement
-                                    </x-likeslocale.button>
-                                </form>
-                            @endif
+                                <p class="rounded-xl bg-gray-50 p-3 text-sm text-gray-600">You do not have permission to perform account security changes.</p>
+                            @endcan
                         </div>
                     </div>
 

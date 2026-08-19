@@ -1,8 +1,8 @@
-<x-layouts.portal :title="'Add Employer / Sponsor'" heading="Add Employer / Sponsor" subheading="Create an employer or sponsor account and send login details automatically." portalRole="admin">
+<x-layouts.portal :title="'Add Employer / Sponsor'" heading="Add Employer / Sponsor" subheading="Create an employer or sponsor account and send a secure setup link." portalRole="admin">
     <div class="max-w-4xl">
         <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
             <h3 class="text-xl font-semibold text-gray-900">Provision Employer / Sponsor</h3>
-            <p class="mt-1 text-sm text-gray-500">The system will generate a temporary password and email the new user their login details.</p>
+            <p class="mt-1 text-sm text-gray-500">The new user will receive a single-use, expiring link to establish their password.</p>
 
             <form method="POST" action="{{ route('admin.employers.store') }}" class="mt-6 space-y-6">
                 @csrf

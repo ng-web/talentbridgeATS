@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\Entitlement;
 use App\Models\User;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 final class EntitlementController extends Controller
 {
+    public function __construct(private readonly PrivacyAuditService $audit) {}
+
     public function index(Request $request): View|Response
     {
         $q = trim((string) $request->query('q', ''));
@@ -39,7 +41,7 @@ final class EntitlementController extends Controller
                     ->whereNotNull('expires_at')
                     ->whereBetween('expires_at', [now(), now()->addDays(7)]);
             })
-            ->when(!$expiring && $status !== '', function ($query) use ($status) {
+            ->when(! $expiring && $status !== '', function ($query) use ($status) {
                 $query->where('status', $status);
             })
             ->latest()
@@ -81,9 +83,9 @@ final class EntitlementController extends Controller
 
         $data = [
             'entitlements' => $entitlements,
-            'users'        => $users,
-            'prefill'      => $prefill,
-            'filters'      => compact('q', 'type', 'status', 'expiring'),
+            'users' => $users,
+            'prefill' => $prefill,
+            'filters' => compact('q', 'type', 'status', 'expiring'),
         ];
 
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
@@ -97,8 +99,8 @@ final class EntitlementController extends Controller
     {
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'type' => ['required', 'string', 'in:' . implode(',', Entitlement::TYPES)],
-            'status' => ['required', 'string', 'in:' . implode(',', Entitlement::STATUSES)],
+            'type' => ['required', 'string', 'in:'.implode(',', Entitlement::TYPES)],
+            'status' => ['required', 'string', 'in:'.implode(',', Entitlement::STATUSES)],
             'starts_at' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'notes' => ['nullable', 'string'],
@@ -128,44 +130,63 @@ final class EntitlementController extends Controller
                 ->withInput();
         }
 
-        $entitlement = Entitlement::updateOrCreate(
-            [
-                'user_id' => $validated['user_id'],
-                'type' => $validated['type'],
-            ],
-            [
-                'status' => $validated['status'],
-                'starts_at' => $validated['starts_at'] ?? now()->toDateString(),
-                'expires_at' => $validated['expires_at'] ?? null,
-                'source' => 'admin_manual',
-                'notes' => $validated['notes'] ?? null,
-            ]
-        );
+        $entitlement = DB::transaction(function () use ($user, $validated): Entitlement {
+            $entitlement = Entitlement::updateOrCreate(
+                [
+                    'user_id' => $validated['user_id'],
+                    'type' => $validated['type'],
+                ],
+                [
+                    'status' => $validated['status'],
+                    'starts_at' => $validated['starts_at'] ?? now()->toDateString(),
+                    'expires_at' => $validated['expires_at'] ?? null,
+                    'source' => 'admin_manual',
+                    'notes' => $validated['notes'] ?? null,
+                ]
+            );
+
+            $this->audit->record(
+                event: 'access_granted',
+                actor: auth()->user(),
+                resource: $entitlement,
+                subjectUserId: $user->id,
+                reasonCode: 'admin_entitlement_saved',
+                metadata: [
+                    'type' => $entitlement->type,
+                    'expires_at' => $entitlement->expires_at?->toDateTimeString(),
+                ],
+            );
+
+            return $entitlement;
+        });
 
         $entitlement->load('user');
 
         return back()->with(
             'success',
-            'Entitlement saved for ' . ($entitlement->user?->name ?? 'user') . ' (' . Entitlement::typeLabelFor($entitlement->type) . ').'
+            'Entitlement saved for '.($entitlement->user?->name ?? 'user').' ('.Entitlement::typeLabelFor($entitlement->type).').'
         );
     }
 
     public function destroy(Entitlement $entitlement): RedirectResponse
     {
-        AuditLog::create([
-            'actor_user_id' => Auth::id(),
-            'action' => 'entitlement.deleted',
-            'entity_type' => Entitlement::class,
-            'entity_id' => $entitlement->id,
-            'meta' => [
-                'user_id' => $entitlement->user_id,
-                'type' => $entitlement->type,
-                'status' => $entitlement->status,
-                'expires_at' => $entitlement->expires_at?->toDateTimeString(),
-            ],
-        ]);
+        DB::transaction(function () use ($entitlement): void {
+            $this->audit->record(
+                event: 'entitlement.deleted',
+                actor: auth()->user(),
+                resource: $entitlement,
+                subjectUserId: $entitlement->user_id,
+                reasonCode: 'admin_entitlement_deletion',
+                metadata: [
+                    'user_id' => $entitlement->user_id,
+                    'type' => $entitlement->type,
+                    'status' => $entitlement->status,
+                    'expires_at' => $entitlement->expires_at?->toDateTimeString(),
+                ],
+            );
 
-        $entitlement->delete();
+            $entitlement->delete();
+        });
 
         return redirect()
             ->route('admin.entitlements.index')

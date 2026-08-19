@@ -3,14 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Security\AdminSessionService;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly AdminSessionService $sessions,
+        private readonly PrivacyAuditService $audit,
+    ) {}
+
     /**
      * Display the user's profile form.
      */
@@ -48,9 +56,21 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        DB::transaction(function () use ($user): void {
+            $revoked = $this->sessions->invalidateAll($user);
+            $user->delete();
 
-        $user->delete();
+            $this->audit->record(
+                event: 'user_soft_deleted',
+                actor: $user,
+                resource: $user,
+                subjectUserId: $user->id,
+                reasonCode: 'self_service_account_closure',
+                metadata: ['session_revocation_count' => $revoked],
+            );
+        });
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

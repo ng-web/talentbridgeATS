@@ -2,7 +2,7 @@
     <div class="max-w-md mx-auto mt-10 rounded-3xl bg-white p-8 shadow border border-gray-100">
         <h1 class="text-2xl font-semibold text-gray-900">Change Your Password</h1>
         <p class="mt-2 text-sm text-gray-500">
-            For security, you need to change your temporary password before continuing.
+            For security, you need to establish a new password before continuing.
         </p>
 
         <form method="POST" action="{{ route('forced-password.update') }}" class="mt-6 space-y-5">
@@ -10,7 +10,7 @@
             @method('PUT')
 
             <div>
-                <label for="current_password" class="block text-sm font-medium text-gray-700">Temporary Password</label>
+                <label for="current_password" class="block text-sm font-medium text-gray-700">Current Password</label>
                 <input id="current_password" name="current_password" type="password" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm">
                 @error('current_password')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

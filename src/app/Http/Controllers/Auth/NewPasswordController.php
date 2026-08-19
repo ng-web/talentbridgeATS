@@ -4,23 +4,34 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Security\AdminSessionService;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\View\View;
 
 class NewPasswordController extends Controller
 {
+    public function __construct(
+        private readonly AdminSessionService $sessions,
+        private readonly PrivacyAuditService $audit,
+    ) {}
+
     /**
      * Display the password reset view.
      */
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
-        return view('auth.reset-password', ['request' => $request]);
+        return response(view('auth.reset-password', ['request' => $request]))->withHeaders([
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'Referrer-Policy' => 'no-referrer',
+        ]);
     }
 
     /**
@@ -41,11 +52,25 @@ class NewPasswordController extends Controller
         // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            function (User $user) use ($request): void {
                 $user->forceFill([
                     'password' => Hash::make($request->password),
+                    'must_change_password' => false,
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                $revoked = $this->sessions->invalidateAll($user);
+
+                $this->audit->record(
+                    event: 'password_reset_completed',
+                    resource: $user,
+                    subjectUserId: $user->id,
+                    reasonCode: 'self_service_password_reset',
+                    metadata: [
+                        'account_role' => $user->getRoleNames()->first() ?? 'unassigned',
+                        'session_revocation_count' => $revoked,
+                    ],
+                );
 
                 event(new PasswordReset($user));
             }

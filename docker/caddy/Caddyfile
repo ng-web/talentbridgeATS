@@ -1,8 +1,15 @@
 portal.kairoxexchange.com {
+	@token_pages path /account-setup/* /reset-password/*
+	@standard_pages {
+		not path /account-setup/* /reset-password/*
+	}
+
+	header @token_pages Referrer-Policy "no-referrer"
+	header @standard_pages Referrer-Policy "strict-origin-when-cross-origin"
+
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		X-Frame-Options "DENY"
 		-Server

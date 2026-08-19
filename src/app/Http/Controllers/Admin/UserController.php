@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Mail\EmployerProvisionedMail;
 use App\Models\AdminOverride;
 use App\Models\AuditLog;
 use App\Models\Entitlement;
@@ -11,19 +10,26 @@ use App\Models\Payment;
 use App\Models\PaymentAssistanceRequest;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\Security\AccountSetupService;
+use App\Services\Security\AdminSessionService;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
 final class UserController extends Controller
 {
+    public function __construct(
+        private readonly PrivacyAuditService $auditService,
+        private readonly AdminSessionService $sessions,
+        private readonly AccountSetupService $accountSetup,
+    ) {}
+
     public function index(Request $request): View
     {
         $q = trim((string) $request->query('q', ''));
@@ -141,9 +147,14 @@ final class UserController extends Controller
             return back()->with('error', 'You cannot move your own account to the recycle bin.');
         }
 
-        $user->delete();
+        DB::transaction(function () use ($user): void {
+            $revoked = $this->sessions->invalidateAll($user);
+            $user->delete();
 
-        $this->audit('user_soft_deleted', $user);
+            $this->audit('user_soft_deleted', $user, [
+                'session_revocation_count' => $revoked,
+            ], 'account_suspended');
+        });
 
         return redirect()
             ->route('admin.users.index')
@@ -153,9 +164,10 @@ final class UserController extends Controller
     public function restore(int $id): RedirectResponse
     {
         $user = User::onlyTrashed()->findOrFail($id);
-        $user->restore();
-
-        $this->audit('user_restored', $user);
+        DB::transaction(function () use ($user): void {
+            $user->restore();
+            $this->audit('user_restored', $user, [], 'account_reactivated');
+        });
 
         return redirect()
             ->route('admin.users.deleted')
@@ -182,28 +194,19 @@ final class UserController extends Controller
             return back()->with('error', 'Permanent deletion is blocked because this user has: '.implode(', ', $blockers).'.');
         }
 
-        $target = [
-            'target_user_id' => $user->id,
-        ];
-
-        DB::transaction(function () use ($user, $target): void {
-            // Notifications and sessions are ephemeral operational records and are removed deliberately.
+        DB::transaction(function () use ($user): void {
+            $revoked = $this->sessions->invalidateAll($user);
             $user->notifications()->delete();
-            DB::connection(config('session.connection'))
-                ->table((string) config('session.table', 'sessions'))
-                ->where('user_id', $user->id)
-                ->delete();
-
             $user->syncRoles([]);
             $user->forceDelete();
 
-            AuditLog::create([
-                'actor_user_id' => auth()->id(),
-                'action' => 'user_force_deleted',
-                'entity_type' => User::class,
-                'entity_id' => $target['target_user_id'],
-                'meta' => $target,
-            ]);
+            $this->auditService->record(
+                event: 'user_force_deleted',
+                actor: auth()->user(),
+                resource: $user,
+                reasonCode: 'permanent_deletion_approved',
+                metadata: ['session_revocation_count' => $revoked],
+            );
         });
 
         return redirect()
@@ -211,43 +214,20 @@ final class UserController extends Controller
             ->with('success', 'User permanently deleted.');
     }
 
-    public function issueTemporaryPassword(User $user): RedirectResponse
+    public function sendAccountSetupLink(Request $request, User $user): RedirectResponse
     {
-        $temporaryPassword = Str::password(12);
-
-        $user->update([
-            'password' => $temporaryPassword,
-            'must_change_password' => true,
-        ]);
-
-        Log::warning('Temporary password issued by admin', [
-            'target_user_id' => $user->id,
-            'admin_user_id' => auth()->id(),
-        ]);
-
         try {
-            Mail::to($user->email)->send(
-                new EmployerProvisionedMail(
-                    user: $user,
-                    temporaryPassword: $temporaryPassword,
-                    loginUrl: route('login'),
-                )
-            );
+            $this->accountSetup->issue($user, $request->user());
 
-            return back()->with('success', 'Temporary password issued and login details emailed successfully.');
+            return back()->with('success', 'A single-use, expiring account setup link was sent. Existing sessions and credentials were invalidated.');
         } catch (Throwable $e) {
-            Log::error('Temporary password email failed', [
+            Log::error('Secure account setup email failed', [
                 'target_user_id' => $user->id,
                 'admin_user_id' => auth()->id(),
                 'exception_class' => $e::class,
             ]);
 
-            return back()
-                ->with('error', 'Temporary password was issued, but the email could not be sent.')
-                ->with('provisioned_credentials', [
-                    'email' => $user->email,
-                    'temporary_password' => $temporaryPassword,
-                ]);
+            return back()->with('error', 'Account setup link could not be sent. No setup credentials were issued. Please verify mail delivery and try again.');
         }
     }
 
@@ -257,10 +237,10 @@ final class UserController extends Controller
             'must_change_password' => true,
         ]);
 
-        Log::warning('Password change forced by admin', [
-            'target_user_id' => $user->id,
-            'admin_user_id' => auth()->id(),
-        ]);
+        $revoked = $this->sessions->invalidateAll($user);
+        $this->audit('password_change_required', $user, [
+            'session_revocation_count' => $revoked,
+        ], 'admin_required_password_change');
 
         return back()->with('success', 'User will be required to change password on next login.');
     }
@@ -271,10 +251,7 @@ final class UserController extends Controller
             'must_change_password' => false,
         ]);
 
-        Log::warning('Password change requirement cleared by admin', [
-            'target_user_id' => $user->id,
-            'admin_user_id' => auth()->id(),
-        ]);
+        $this->audit('password_change_requirement_cleared', $user, [], 'admin_cleared_password_change');
 
         return back()->with('success', 'Password change requirement cleared.');
     }
@@ -287,25 +264,35 @@ final class UserController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        Entitlement::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'type' => $validated['type'],
-            ],
-            [
-                'status' => Entitlement::STATUS_ACTIVE,
-                'starts_at' => now(),
-                'expires_at' => $validated['expires_at'] ?? now()->addMonth(),
-                'source' => 'admin_user_detail',
-                'notes' => $validated['notes'] ?? 'Access granted from admin user detail page.',
-            ]
-        );
+        DB::transaction(function () use ($user, $validated): void {
+            $expiresAt = $validated['expires_at'] ?? now()->addMonth()->toDateTimeString();
 
-        Log::warning('Access granted from user detail page', [
-            'target_user_id' => $user->id,
-            'type' => $validated['type'],
-            'admin_user_id' => auth()->id(),
-        ]);
+            Entitlement::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'type' => $validated['type'],
+                ],
+                [
+                    'status' => Entitlement::STATUS_ACTIVE,
+                    'starts_at' => now(),
+                    'expires_at' => $expiresAt,
+                    'source' => 'admin_user_detail',
+                    'notes' => $validated['notes'] ?? 'Access granted from admin user detail page.',
+                ]
+            );
+
+            $this->auditService->record(
+                event: 'access_granted',
+                actor: auth()->user(),
+                resource: $user,
+                subjectUserId: $user->id,
+                reasonCode: 'admin_access_grant',
+                metadata: [
+                    'type' => $validated['type'],
+                    'expires_at' => $expiresAt,
+                ],
+            );
+        });
 
         return back()->with('success', 'Access granted successfully.');
     }
@@ -325,17 +312,22 @@ final class UserController extends Controller
             return back()->with('error', 'No matching entitlement was found for this user.');
         }
 
-        $entitlement->update([
-            'status' => Entitlement::STATUS_REVOKED,
-            'expires_at' => now(),
-            'notes' => trim(($entitlement->notes ? $entitlement->notes."\n" : '').'Revoked from admin user detail page.'),
-        ]);
+        DB::transaction(function () use ($entitlement, $type, $user): void {
+            $entitlement->update([
+                'status' => Entitlement::STATUS_REVOKED,
+                'expires_at' => now(),
+                'notes' => trim(($entitlement->notes ? $entitlement->notes."\n" : '').'Revoked from admin user detail page.'),
+            ]);
 
-        Log::warning('Access revoked from user detail page', [
-            'target_user_id' => $user->id,
-            'type' => $type,
-            'admin_user_id' => auth()->id(),
-        ]);
+            $this->auditService->record(
+                event: 'access_revoked',
+                actor: auth()->user(),
+                resource: $user,
+                subjectUserId: $user->id,
+                reasonCode: 'admin_access_revoke',
+                metadata: ['type' => $type],
+            );
+        });
 
         return back()->with('success', 'Access revoked successfully.');
     }
@@ -443,14 +435,15 @@ final class UserController extends Controller
         return $blockers;
     }
 
-    private function audit(string $action, User $user, array $meta = []): void
+    private function audit(string $action, User $user, array $meta = [], ?string $reasonCode = null): void
     {
-        AuditLog::create([
-            'actor_user_id' => auth()->id(),
-            'action' => $action,
-            'entity_type' => User::class,
-            'entity_id' => $user->id,
-            'meta' => $meta,
-        ]);
+        $this->auditService->record(
+            event: $action,
+            actor: auth()->user(),
+            resource: $user,
+            subjectUserId: $user->id,
+            reasonCode: $reasonCode,
+            metadata: $meta,
+        );
     }
 }

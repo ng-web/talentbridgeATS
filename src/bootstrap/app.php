@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'seeker.access' => \App\Http\Middleware\EnsureActiveSeekerAccess::class,
             'employer.posting.access' => \App\Http\Middleware\EnsureActiveEmployerPostingAccess::class,
             'password.change.required' => \App\Http\Middleware\EnsurePasswordChanged::class,
+            'security.session' => \App\Http\Middleware\EnsureValidSecuritySession::class,
+            'administrator.mfa' => \App\Http\Middleware\EnsureAdministratorMfa::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

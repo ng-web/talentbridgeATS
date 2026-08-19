@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
+use Laravel\Fortify\LoginRateLimiter;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -22,9 +24,26 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+    public function store(
+        LoginRequest $request,
+        RedirectIfTwoFactorAuthenticatable $redirectIfTwoFactor,
+        LoginRateLimiter $limiter,
+    ): RedirectResponse {
+        $request->ensureIsNotRateLimited();
+
+        $twoFactorResponse = $redirectIfTwoFactor->handle(
+            $request,
+            function (LoginRequest $request): void {
+                $request->authenticate();
+            },
+        );
+
+        if ($twoFactorResponse instanceof RedirectResponse) {
+            $request->session()->put('login.auth_method', 'password');
+            $limiter->clear($request);
+
+            return $twoFactorResponse;
+        }
 
         $request->session()->regenerate();
 

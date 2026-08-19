@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
-use App\Models\AuditLog;
 use App\Models\JobSeeker;
 use App\Models\JobSeekerDocument;
 use App\Services\Documents\ApplicantDocumentStorage;
 use App\Services\Documents\DocumentAccessPolicy;
+use App\Services\Security\PrivacyAuditService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -16,6 +16,7 @@ final class DocumentDownloadController extends Controller
     public function __construct(
         private readonly ApplicantDocumentStorage $storage,
         private readonly DocumentAccessPolicy $access,
+        private readonly PrivacyAuditService $audit,
     ) {}
 
     public function jobSeekerDocument(Request $request, JobSeekerDocument $document): StreamedResponse
@@ -113,17 +114,18 @@ final class DocumentDownloadController extends Controller
             return;
         }
 
-        AuditLog::create([
-            'actor_user_id' => $request->user()->id,
-            'action' => 'sensitive_document_downloaded',
-            'entity_type' => JobSeekerDocument::class,
-            'entity_id' => $document->id,
-            'meta' => [
+        $this->audit->record(
+            event: 'sensitive_document_downloaded',
+            actor: $request->user(),
+            resource: $document,
+            subjectUserId: $jobSeeker->user_id,
+            reasonCode: 'authorized_document_access',
+            metadata: [
                 'actor_role' => $request->user()->getRoleNames()->first(),
                 'document_type' => $documentType,
                 'applicant_user_id' => $jobSeeker->user_id,
             ],
-        ]);
+        );
     }
 
     private function safeDownloadName(?string $originalName, string $fallback, string $path): string

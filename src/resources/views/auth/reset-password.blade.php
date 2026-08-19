@@ -36,4 +36,8 @@
             </x-primary-button>
         </div>
     </form>
+
+    <script>
+        window.history.replaceState(null, document.title, @js(route('password.store')));
+    </script>
 </x-guest-layout>

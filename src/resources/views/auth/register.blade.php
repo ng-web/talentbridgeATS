@@ -15,6 +15,38 @@
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
+        @if(config('privacy.registration.evidence_enabled'))
+            <div class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h2 class="text-sm font-semibold text-gray-900">Privacy and terms</h2>
+
+                @foreach(\App\Models\PolicyDocument::TYPES as $policyType)
+                    @php($policy = $policyDocuments->get($policyType))
+                    @if($policy)
+                        <input type="hidden" name="policy_documents[{{ $policyType }}]" value="{{ $policy->id }}">
+                        <label class="flex items-start gap-3 text-sm text-gray-700">
+                            <input type="checkbox" name="policy_acknowledgements[{{ $policyType }}]" value="1" required class="mt-1 rounded border-gray-300">
+                            <span>
+                                @if($policyType === \App\Models\PolicyDocument::TYPE_PRIVACY_NOTICE)
+                                    I acknowledge that I was shown the
+                                @else
+                                    I accept the
+                                @endif
+                                <a href="{{ $policy->content_reference }}" target="_blank" rel="noopener noreferrer" class="font-medium text-[#6f4cb2] underline">
+                                    {{ $policy->title }} (version {{ $policy->version }})
+                                </a>.
+                            </span>
+                        </label>
+                    @elseif(config('privacy.registration.'.($policyType === \App\Models\PolicyDocument::TYPE_PRIVACY_NOTICE ? 'require_privacy_notice' : 'require_terms')))
+                        <p class="text-sm text-red-700">Registration policy evidence is temporarily unavailable.</p>
+                    @endif
+                @endforeach
+
+                <x-input-error :messages="$errors->get('policy_documents')" />
+                <x-input-error :messages="$errors->get('policy_documents.privacy_notice')" />
+                <x-input-error :messages="$errors->get('policy_documents.terms_of_service')" />
+            </div>
+        @endif
+
         <div>
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" class="mt-1 block w-full rounded-2xl" type="email" name="email" :value="old('email')" required autocomplete="username" />

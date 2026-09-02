@@ -49,6 +49,11 @@
                             <x-heroicon-o-document-text class="w-5 h-5" />
                             <span>Applications</span>
                         </a>
+
+                        <a href="{{ route('privacy.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('privacy.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10 hover:translate-x-1' }}">
+                            <x-heroicon-o-shield-check class="w-5 h-5" />
+                            <span>Privacy Centre</span>
+                        </a>
                     @elseif(($portalRole ?? null) === 'employer')
                         <div class="px-4 pt-2 pb-1 text-[11px] uppercase tracking-[0.18em] text-white/55">
                             Employer
@@ -107,6 +112,19 @@
                             <x-heroicon-o-list-bullet class="w-5 h-5" />
                             <span>Reference Data</span>
                         </a>
+
+                        @can('privacy.requests.view')
+                            <a href="{{ route('admin.privacy-requests.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('admin.privacy-requests.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10 hover:translate-x-1' }}">
+                                <x-heroicon-o-shield-check class="w-5 h-5" />
+                                <span>Privacy Requests</span>
+                            </a>
+                        @endcan
+                        @can('privacy.policy.view')
+                            <a href="{{ route('admin.policy-documents.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('admin.policy-documents.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10 hover:translate-x-1' }}">
+                                <x-heroicon-o-document-check class="w-5 h-5" />
+                                <span>Policy Registry</span>
+                            </a>
+                        @endcan
                     @endif
                 </nav>
 
@@ -180,6 +198,11 @@
                         <x-heroicon-o-document-text class="w-5 h-5" />
                         <span>Applications</span>
                     </a>
+
+                    <a href="{{ route('privacy.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('privacy.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10' }}">
+                        <x-heroicon-o-shield-check class="w-5 h-5" />
+                        <span>Privacy Centre</span>
+                    </a>
                 @elseif(($portalRole ?? null) === 'employer')
                     <div class="px-4 pt-2 pb-1 text-[11px] uppercase tracking-[0.18em] text-white/55">
                         Employer
@@ -233,6 +256,19 @@
                         <x-heroicon-o-list-bullet class="w-5 h-5" />
                         <span>Reference Data</span>
                     </a>
+
+                    @can('privacy.requests.view')
+                        <a href="{{ route('admin.privacy-requests.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('admin.privacy-requests.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10' }}">
+                            <x-heroicon-o-shield-check class="w-5 h-5" />
+                            <span>Privacy Requests</span>
+                        </a>
+                    @endcan
+                    @can('privacy.policy.view')
+                        <a href="{{ route('admin.policy-documents.index') }}" class="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-all duration-200 {{ request()->routeIs('admin.policy-documents.*') ? 'bg-white/20 border border-white/15 shadow-sm' : 'hover:bg-white/10' }}">
+                            <x-heroicon-o-document-check class="w-5 h-5" />
+                            <span>Policy Registry</span>
+                        </a>
+                    @endcan
                 @endif
             </nav>
 

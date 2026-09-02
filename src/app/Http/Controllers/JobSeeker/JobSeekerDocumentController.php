@@ -4,6 +4,8 @@ namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
 use App\Models\JobSeekerDocument;
+use App\Models\PolicyDocument;
+use App\Models\SensitiveProcessingEvidence;
 use App\Services\Documents\ApplicantDocumentLifecycle;
 use App\Services\Documents\ApplicantDocumentStorage;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +32,14 @@ final class JobSeekerDocumentController extends Controller
 
         if (! in_array($type, JobSeekerDocument::TYPES, true)) {
             return back()->with('error', 'Invalid document type.');
+        }
+
+        if (config('privacy.sensitive_processing.enforcement_enabled')
+            && in_array($type, SensitiveProcessingEvidence::CATEGORIES, true)
+            && ! $this->hasCurrentPurposeAuthorization((int) Auth::id(), $type)) {
+            return back()->withErrors([
+                'file' => 'Kairox-approved processing evidence is required before this high-risk document can be collected.',
+            ]);
         }
 
         $request->validate([
@@ -123,5 +133,35 @@ final class JobSeekerDocumentController extends Controller
         }
 
         return back()->with('success', 'Document removed.');
+    }
+
+    private function hasCurrentPurposeAuthorization(int $userId, string $category): bool
+    {
+        $purposes = (array) config('privacy.sensitive_processing.purpose_codes', []);
+        $evidenceTypes = (array) config('privacy.sensitive_processing.evidence_types', []);
+        if ($purposes === [] || $evidenceTypes === []) {
+            return false;
+        }
+
+        $query = SensitiveProcessingEvidence::query()
+            ->where('user_id', $userId)
+            ->where('category', $category)
+            ->whereIn('purpose_code', $purposes)
+            ->whereIn('evidence_type', $evidenceTypes)
+            ->whereNull('withdrawn_at');
+
+        if (config('privacy.sensitive_processing.require_current_policy')) {
+            $policyType = config('privacy.sensitive_processing.current_policy_type');
+            if (! is_string($policyType) || ! in_array($policyType, PolicyDocument::TYPES, true)) {
+                return false;
+            }
+            $current = PolicyDocument::current($policyType);
+            if (! $current) {
+                return false;
+            }
+            $query->where('policy_document_id', $current->id);
+        }
+
+        return $query->exists();
     }
 }

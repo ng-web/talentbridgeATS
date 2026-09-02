@@ -299,6 +299,9 @@
                                 $hasAny    = $docs->isNotEmpty();
                                 $label     = \App\Models\JobSeekerDocument::labelFor($type);
                                 $accept    = \App\Models\JobSeekerDocument::acceptAttrFor($type);
+                                $requiresEvidence = config('privacy.sensitive_processing.enforcement_enabled') && in_array($type, \App\Models\SensitiveProcessingEvidence::CATEGORIES, true);
+                                $processingEvidence = $sensitiveEvidence->get($type);
+                                $collectionAllowed = !$requiresEvidence || $processingEvidence;
                             @endphp
 
                             <div class="rounded-2xl border p-5 {{ $hasAny ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-gray-50/60' }}">
@@ -313,6 +316,19 @@
                                         <x-likeslocale.status-pill tone="neutral">Not uploaded</x-likeslocale.status-pill>
                                     @endif
                                 </div>
+
+                                @if($requiresEvidence)
+                                    <div class="mb-3 rounded-xl border {{ $collectionAllowed ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-amber-200 bg-amber-50 text-amber-800' }} p-2 text-xs">
+                                        @if($collectionAllowed)
+                                            Kairox processing context: {{ str_replace('_', ' ', $processingEvidence->purpose_code) }}.
+                                            @if($processingEvidence->policyDocument)
+                                                <a class="underline" target="_blank" rel="noopener noreferrer" href="{{ $processingEvidence->policyDocument->content_reference }}">View approved policy reference</a>
+                                            @endif
+                                        @else
+                                            Collection is unavailable until Kairox records its approved processing context.
+                                        @endif
+                                    </div>
+                                @endif
 
                                 {{-- Existing files --}}
                                 @if($hasAny)
@@ -343,7 +359,9 @@
                                 @endif
 
                                 {{-- Upload button: always shown for multi, or when empty for single --}}
-                                @if($isMulti || !$hasAny)
+                                @if(!$collectionAllowed)
+                                    <div class="rounded-xl border border-gray-200 bg-gray-100 p-2.5 text-center text-xs text-gray-500">Upload unavailable</div>
+                                @elseif($isMulti || !$hasAny)
                                     <form x-data="{ loading: false }"
                                           method="POST"
                                           action="{{ route('jobseeker.documents.store') }}"

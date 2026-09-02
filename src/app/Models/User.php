@@ -139,6 +139,21 @@ final class User extends Authenticatable
         return $this->hasMany(AuditLog::class, 'actor_user_id');
     }
 
+    public function policyAcknowledgements(): HasMany
+    {
+        return $this->hasMany(PolicyAcknowledgement::class);
+    }
+
+    public function privacyRequests(): HasMany
+    {
+        return $this->hasMany(PrivacyRequest::class, 'subject_user_id');
+    }
+
+    public function dataExports(): HasMany
+    {
+        return $this->hasMany(DataExport::class, 'subject_user_id');
+    }
+
     public function hasActiveEntitlement(string $type): bool
     {
         return $this->entitlements()

@@ -58,6 +58,26 @@ final class PrivacyAuditService
         'privileged_reauthentication_failed' => ['operation'],
         'admin_permission_changed' => ['permission', 'change'],
         'admin_role_changed' => ['role', 'change'],
+        'policy_document_created' => ['policy_type', 'policy_version'],
+        'policy_document_activated' => ['policy_type', 'policy_version'],
+        'policy_acknowledged' => ['policy_type', 'policy_version'],
+        'sensitive_processing_evidence_recorded' => ['document_type', 'purpose_code', 'evidence_type'],
+        'privacy_request_submitted' => ['request_type', 'request_state'],
+        'privacy_request_assigned' => ['request_type', 'request_state'],
+        'privacy_request_identity_verified' => ['request_type', 'request_state'],
+        'privacy_request_state_changed' => ['request_type', 'request_state'],
+        'privacy_request_decision_recorded' => ['request_type', 'request_state'],
+        'privacy_request_completed' => ['request_type', 'request_state'],
+        'data_export_authorized' => ['export_status', 'scope_count'],
+        'data_export_reauthorized' => ['export_status', 'scope_count'],
+        'data_export_generation_queued' => ['export_status', 'scope_count'],
+        'data_export_generation_retried' => ['export_status', 'scope_count'],
+        'data_export_generation_reconciled' => ['export_status'],
+        'data_export_generated' => ['export_status', 'scope_count'],
+        'data_export_downloaded' => ['export_status'],
+        'data_export_expired' => ['export_status'],
+        'data_export_purged' => ['export_status'],
+        'data_export_purge_completed' => ['record_count'],
     ];
 
     /**
@@ -168,7 +188,14 @@ final class PrivacyAuditService
                 'employer jobs',
                 'admin overrides',
                 'audit logs',
+                'privacy evidence or requests',
             ],
+            'policy_type' => \App\Models\PolicyDocument::TYPES,
+            'request_type' => \App\Models\PrivacyRequest::TYPES,
+            'request_state' => \App\Models\PrivacyRequest::STATES,
+            'export_status' => \App\Models\DataExport::STATUSES,
+            'purpose_code' => config('privacy.sensitive_processing.purpose_codes', []),
+            'evidence_type' => config('privacy.sensitive_processing.evidence_types', []),
             default => null,
         };
 
@@ -180,6 +207,16 @@ final class PrivacyAuditService
             && $value !== null
             && (! is_int($value) || $value < 0)) {
             throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
+        }
+
+        if (in_array($key, ['scope_count', 'record_count'], true)
+            && (! is_int($value) || $value < 0)) {
+            throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
+        }
+
+        if ($key === 'policy_version'
+            && (! is_string($value) || ! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,49}$/', $value))) {
+            throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] is not a policy version.");
         }
 
         if ($key === 'access_granted' && ! is_bool($value)) {

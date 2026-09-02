@@ -3,9 +3,13 @@
 use App\Http\Controllers\Admin\AdminMfaController;
 use App\Http\Controllers\Admin\AdminMfaRecoveryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DataExportController;
 use App\Http\Controllers\Admin\EmployerProvisioningController;
 use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\PaymentReviewController;
+use App\Http\Controllers\Admin\PolicyDocumentController;
+use App\Http\Controllers\Admin\PrivacyRequestController as AdminPrivacyRequestController;
+use App\Http\Controllers\Admin\SensitiveProcessingEvidenceController;
 use App\Http\Controllers\Auth\ForcedPasswordChangeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentDownloadController;
@@ -18,6 +22,7 @@ use App\Http\Controllers\JobSeeker\DashboardController as JobSeekerDashboardCont
 use App\Http\Controllers\JobSeeker\JobController as JobSeekerJobController;
 use App\Http\Controllers\Locked\EmployerAccessController;
 use App\Http\Controllers\Locked\SeekerAccessController;
+use App\Http\Controllers\PrivacyCenterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\ApplyController;
 use App\Http\Controllers\Public\PaymentAssistanceController;
@@ -96,6 +101,12 @@ Route::middleware(['auth', 'security.session', 'password.change.required', 'admi
         });
     });
 
+    Route::middleware('role:job_seeker')->prefix('privacy')->name('privacy.')->group(function () {
+        Route::get('/', [PrivacyCenterController::class, 'index'])->name('index');
+        Route::post('/requests', [PrivacyCenterController::class, 'store'])->name('store');
+        Route::get('/requests/{privacyRequest}', [PrivacyCenterController::class, 'show'])->name('show');
+    });
+
     Route::middleware(['role:employer'])->prefix('employer')->name('employer.')->group(function () {
         Route::get('/dashboard', EmployerDashboardController::class)->name('dashboard');
 
@@ -118,6 +129,53 @@ Route::middleware(['auth', 'security.session', 'password.change.required', 'admi
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
+
+        Route::get('/privacy-requests', [AdminPrivacyRequestController::class, 'index'])
+            ->middleware('permission:privacy.requests.view')
+            ->name('privacy-requests.index');
+        Route::get('/privacy-requests/{privacyRequest}', [AdminPrivacyRequestController::class, 'show'])
+            ->middleware('permission:privacy.requests.view')
+            ->name('privacy-requests.show');
+        Route::post('/privacy-requests/{privacyRequest}/assign', [AdminPrivacyRequestController::class, 'assign'])
+            ->middleware('permission:privacy.requests.manage')
+            ->name('privacy-requests.assign');
+        Route::post('/privacy-requests/{privacyRequest}/transition', [AdminPrivacyRequestController::class, 'transition'])
+            ->middleware('permission:privacy.requests.manage')
+            ->name('privacy-requests.transition');
+        Route::post('/privacy-requests/{privacyRequest}/verify-identity', [AdminPrivacyRequestController::class, 'verifyIdentity'])
+            ->middleware(['permission:privacy.requests.manage', 'password.confirm'])
+            ->name('privacy-requests.verify-identity');
+        Route::post('/privacy-requests/{privacyRequest}/decision', [AdminPrivacyRequestController::class, 'decide'])
+            ->middleware(['permission:privacy.requests.decide', 'password.confirm'])
+            ->name('privacy-requests.decide');
+        Route::post('/privacy-requests/{privacyRequest}/exports', [DataExportController::class, 'authorizeExport'])
+            ->middleware(['permission:privacy.exports.authorize', 'password.confirm'])
+            ->name('privacy-requests.exports.authorize');
+        Route::post('/privacy-requests/{privacyRequest}/exports/{dataExport}/generate', [DataExportController::class, 'generate'])
+            ->middleware(['permission:privacy.exports.generate', 'password.confirm'])
+            ->name('privacy-requests.exports.generate');
+        Route::post('/privacy-requests/{privacyRequest}/exports/{dataExport}/retry', [DataExportController::class, 'retry'])
+            ->middleware(['permission:privacy.exports.generate', 'password.confirm'])
+            ->name('privacy-requests.exports.retry');
+        Route::post('/privacy-requests/{privacyRequest}/exports/{dataExport}/reauthorize', [DataExportController::class, 'reauthorize'])
+            ->middleware(['permission:privacy.exports.authorize', 'password.confirm'])
+            ->name('privacy-requests.exports.reauthorize');
+        Route::get('/privacy-requests/{privacyRequest}/exports/{dataExport}/download', [DataExportController::class, 'download'])
+            ->middleware(['permission:privacy.exports.download', 'password.confirm'])
+            ->name('privacy-requests.exports.download');
+
+        Route::get('/policy-documents', [PolicyDocumentController::class, 'index'])
+            ->middleware('permission:privacy.policy.view')
+            ->name('policy-documents.index');
+        Route::post('/policy-documents', [PolicyDocumentController::class, 'store'])
+            ->middleware(['permission:privacy.policy.manage', 'password.confirm'])
+            ->name('policy-documents.store');
+        Route::post('/policy-documents/{policyDocument}/activate', [PolicyDocumentController::class, 'activate'])
+            ->middleware(['permission:privacy.policy.manage', 'password.confirm'])
+            ->name('policy-documents.activate');
+        Route::post('/privacy-evidence', [SensitiveProcessingEvidenceController::class, 'store'])
+            ->middleware(['permission:privacy.evidence.manage', 'password.confirm'])
+            ->name('privacy-evidence.store');
 
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
         Route::get('/users/deleted', [\App\Http\Controllers\Admin\UserController::class, 'deleted'])->name('users.deleted');

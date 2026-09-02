@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AdminOverride;
 use App\Models\AuditLog;
+use App\Models\DataExport;
 use App\Models\Entitlement;
 use App\Models\Payment;
 use App\Models\PaymentAssistanceRequest;
 use App\Models\Program;
+use App\Models\SensitiveProcessingEvidence;
 use App\Models\User;
 use App\Services\Security\AccountSetupService;
 use App\Services\Security\AdminSessionService;
@@ -430,6 +432,19 @@ final class UserController extends Controller
                 ->exists()
         ) {
             $blockers[] = 'audit logs';
+        }
+
+        if (
+            $user->policyAcknowledgements()->exists()
+            || $user->privacyRequests()->exists()
+            || SensitiveProcessingEvidence::query()->where('user_id', $user->id)->exists()
+            || DataExport::query()
+                ->where(fn (Builder $query) => $query
+                    ->where('subject_user_id', $user->id)
+                    ->orWhere('requested_by_user_id', $user->id))
+                ->exists()
+        ) {
+            $blockers[] = 'privacy evidence or requests';
         }
 
         return $blockers;

@@ -85,8 +85,15 @@ The following Spatie permissions are defined:
 | `admin.security.manage` | Account setup/recovery, employer provisioning, other-admin MFA reset | Unassigned; Kairox approval required |
 | `entitlements.manage` | Access and entitlement grant/revocation | Existing administrator-role permission; route enforcement is explicit |
 | `admin.access-reviews.manage` | Future administrator access reviews | Unassigned |
-| `privacy.requests.manage` | Future privacy-request administration | Unassigned |
-| `privacy.exports.manage` | Future sensitive exports | Unassigned |
+| `privacy.requests.view` | Minimized privacy-request queue/detail access | Unassigned |
+| `privacy.requests.manage` | Assignment, identity-state recording, and non-decision workflow | Unassigned |
+| `privacy.requests.decide` | Kairox controller decision recording | Unassigned |
+| `privacy.exports.generate` | Queue an authorized structured export | Unassigned |
+| `privacy.exports.authorize` | Authorize a verified request's allowlisted export scope | Unassigned |
+| `privacy.exports.download` | Controlled private export download | Unassigned |
+| `privacy.policy.view` / `privacy.policy.manage` | Policy registry access and Kairox-approved activation | Unassigned |
+| `privacy.evidence.view` / `privacy.evidence.manage` | Controlled processing-evidence access | Unassigned |
+| `privacy.exports.manage` | Reserved legacy/future compatibility permission; not used for Pass 2 routes | Unassigned |
 | `privacy.legal-holds.manage` | Future legal holds | Unassigned |
 | `privacy.retention.manage` | Future retention configuration | Unassigned |
 | `privacy.retention.execute` | Future destructive retention execution | Unassigned and separate from configuration |
@@ -131,3 +138,13 @@ The future access-review workflow remains a later P1 pass. Until then, preserve 
 ## Operational checks
 
 After deployment, confirm migrations completed, route caches rebuilt, all administrators are redirected to enrollment until confirmed, a designated security manager has explicit written approval and permission, the production mailer is non-logging, edge/origin logs do not capture setup-token URLs, setup email delivery works, expired/reused setup URLs fail, session invalidation works through the configured session connection, and audit rows contain only allowlisted metadata.
+## Pass 2 operational personas
+
+Kairox privileged administration should use named individual accounts so the audit trail identifies the actual actor. A shared business mailbox may remain a notification address but should not be the identity making controller decisions.
+
+- A Kairox controller/security manager receives the explicit privacy bundle only through the audited `privacy:grant-controller-manager USER_ID` command. The bundle does not include `admin.security.manage` and is not assigned to the generic admin role.
+- A Kairox operations administrator retains normal operational permissions and may receive view/manage permissions individually, but receives no decision, policy, export, retention, hold, incident, or security-manager power automatically.
+- A named Likeslocale technical-support account uses narrow technical permissions under documented Kairox instruction. It receives no controller privacy permission automatically.
+- No routine shared super-admin or break-glass account is created. Any future emergency pattern is **REQUIRES KAIROX APPROVAL** and must be named, MFA-protected, tightly controlled, normally disabled where practical, audited, and reviewed after use.
+
+Review direct permission grants, role membership, MFA enrollment, shared/generic identities, dormant accounts, controller-manager need, and technical-support separation on Kairox's approved cadence. Legal authority and staff designation are **REQUIRES KAIROX APPROVAL**.

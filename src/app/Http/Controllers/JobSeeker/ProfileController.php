@@ -4,6 +4,7 @@ namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
+use App\Models\SensitiveProcessingEvidence;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +27,15 @@ final class ProfileController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('jobseeker.profile.edit', compact('jobSeeker', 'programs'));
+        $sensitiveEvidence = SensitiveProcessingEvidence::query()
+            ->where('user_id', Auth::id())
+            ->whereNull('withdrawn_at')
+            ->with('policyDocument')
+            ->latest('recorded_at')
+            ->get()
+            ->keyBy('category');
+
+        return view('jobseeker.profile.edit', compact('jobSeeker', 'programs', 'sensitiveEvidence'));
     }
 
     public function update(Request $request): RedirectResponse

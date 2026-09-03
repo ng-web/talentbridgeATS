@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Documents\ApplicantDocumentLifecycle;
 use App\Services\Documents\ApplicantDocumentStorage;
 use App\Services\Payments\WiPayPaymentService;
+use App\Services\Privacy\RetentionDataCategories;
 use Database\Seeders\PilotDemoSeeder;
 use Database\Seeders\ProgramSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -155,7 +156,7 @@ final class PrivacyRemediationTest extends TestCase
         $document = $this->document($jobSeeker, JobSeekerDocument::TYPE_CERTIFICATE, 'row-delete.pdf');
         $documentPath = $document->file_path;
 
-        $document->delete();
+        DB::transaction(fn () => $document->delete());
         Storage::disk('private')->assertMissing($documentPath);
 
         $application = Application::create([
@@ -171,7 +172,7 @@ final class PrivacyRemediationTest extends TestCase
 
         $resumePath = $application->submitted_resume_path;
         $coverLetterPath = $application->submitted_cover_letter_path;
-        $application->delete();
+        DB::transaction(fn () => $application->delete());
 
         Storage::disk('private')->assertMissing($resumePath);
         Storage::disk('private')->assertMissing($coverLetterPath);
@@ -191,7 +192,7 @@ final class PrivacyRemediationTest extends TestCase
         Storage::disk('private')->put($applicationFile->file_path, 'synthetic supporting document', 'private');
         $applicationFilePath = $applicationFile->file_path;
 
-        $applicationFile->delete();
+        DB::transaction(fn () => $applicationFile->delete());
         Storage::disk('private')->assertMissing($applicationFilePath);
     }
 
@@ -346,13 +347,21 @@ final class PrivacyRemediationTest extends TestCase
 
     public function test_cleanup_job_is_idempotent_and_preserves_shared_references(): void
     {
-        [, $firstJobSeeker] = $this->applicant('shared-cleanup-one@example.test');
+        [$firstUser, $firstJobSeeker] = $this->applicant('shared-cleanup-one@example.test');
         [, $secondJobSeeker] = $this->applicant('shared-cleanup-two@example.test');
         $sharedPath = 'applicants/shared/legacy-resume.pdf';
         Storage::disk('private')->put($sharedPath, 'shared resume', 'private');
         $firstJobSeeker->update(['resume_path' => $sharedPath]);
         $secondJobSeeker->update(['resume_path' => $sharedPath]);
-        $job = new DeleteUnreferencedApplicantDocument($sharedPath);
+        $job = new DeleteUnreferencedApplicantDocument(
+            $sharedPath,
+            $firstUser->id,
+            RetentionDataCategories::APPLICANT_PROFILE,
+            $firstJobSeeker->id,
+            null,
+            null,
+            hash('sha256', $sharedPath),
+        );
         $lifecycle = app(ApplicantDocumentLifecycle::class);
 
         $job->handle($lifecycle);
@@ -585,7 +594,7 @@ final class PrivacyRemediationTest extends TestCase
     public function test_migration_commit_keeps_public_copy_until_retryable_cleanup_runs(): void
     {
         Queue::fake();
-        [, $jobSeeker] = $this->applicant('migration-delayed-cleanup@example.test');
+        [$user, $jobSeeker] = $this->applicant('migration-delayed-cleanup@example.test');
         $source = 'jobseekers/resumes/delayed-cleanup.pdf';
         $contents = 'delayed cleanup source';
         $jobSeeker->update(['resume_path' => $source]);
@@ -609,7 +618,15 @@ final class PrivacyRemediationTest extends TestCase
         Storage::set('public', $failingPublicDisk);
 
         try {
-            (new DeleteUnreferencedApplicantDocument($source))->handle(app(ApplicantDocumentLifecycle::class));
+            (new DeleteUnreferencedApplicantDocument(
+                $source,
+                $user->id,
+                RetentionDataCategories::APPLICANT_PROFILE,
+                $jobSeeker->id,
+                null,
+                null,
+                hash('sha256', $source),
+            ))->handle(app(ApplicantDocumentLifecycle::class));
             $this->fail('The synthetic public cleanup failure did not occur.');
         } catch (\RuntimeException $e) {
             $this->assertSame('An unreferenced applicant document could not be physically removed.', $e->getMessage());
@@ -621,7 +638,15 @@ final class PrivacyRemediationTest extends TestCase
         Storage::disk('private')->assertExists($destination);
         Storage::disk('public')->assertExists($source);
 
-        (new DeleteUnreferencedApplicantDocument($source))->handle(app(ApplicantDocumentLifecycle::class));
+        (new DeleteUnreferencedApplicantDocument(
+            $source,
+            $user->id,
+            RetentionDataCategories::APPLICANT_PROFILE,
+            $jobSeeker->id,
+            null,
+            null,
+            hash('sha256', $source),
+        ))->handle(app(ApplicantDocumentLifecycle::class));
         Storage::disk('public')->assertMissing($source);
         Storage::disk('private')->assertExists($destination);
     }

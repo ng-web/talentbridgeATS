@@ -78,6 +78,19 @@ final class PrivacyAuditService
         'data_export_expired' => ['export_status'],
         'data_export_purged' => ['export_status'],
         'data_export_purge_completed' => ['record_count'],
+        'retention_rule_created' => ['data_category', 'rule_version', 'rule_status'],
+        'retention_rule_approved' => ['data_category', 'rule_version', 'rule_status'],
+        'retention_rule_retired' => ['data_category', 'rule_version', 'rule_status'],
+        'legal_hold_created' => ['hold_scope', 'hold_code', 'data_category'],
+        'legal_hold_released' => ['hold_scope', 'hold_code', 'data_category'],
+        'disposition_plan_created' => ['data_category', 'item_count', 'plan_status'],
+        'disposition_plan_authorized' => ['data_category', 'item_count', 'plan_status'],
+        'disposition_plan_revoked' => ['data_category', 'plan_status'],
+        'disposition_execution_started' => ['data_category', 'item_count', 'plan_status'],
+        'disposition_succeeded' => ['data_category', 'disposition_method', 'outcome_code'],
+        'disposition_skipped' => ['data_category', 'disposition_method', 'outcome_code'],
+        'disposition_failed' => ['data_category', 'disposition_method', 'outcome_code'],
+        'disposition_reconciled' => ['repair_count', 'report_count'],
     ];
 
     /**
@@ -196,6 +209,17 @@ final class PrivacyAuditService
             'export_status' => \App\Models\DataExport::STATUSES,
             'purpose_code' => config('privacy.sensitive_processing.purpose_codes', []),
             'evidence_type' => config('privacy.sensitive_processing.evidence_types', []),
+            'data_category' => \App\Services\Privacy\RetentionDataCategories::all(),
+            'rule_status' => \App\Models\RetentionRule::STATUSES,
+            'hold_scope' => \App\Models\LegalHold::SCOPES,
+            'hold_code' => \App\Models\LegalHold::HOLD_CODES,
+            'plan_status' => \App\Models\DispositionPlan::STATUSES,
+            'disposition_method' => [\App\Services\Privacy\RetentionDataCategories::METHOD_DETACH_AND_DELETE_FILE],
+            'outcome_code' => [
+                'disposed', 'no_rule', 'legal_hold', 'unsupported', 'ambiguous',
+                'already_disposed', 'not_due', 'requires_authorization', 'stale_claim',
+                'stale_authority', 'execution_failed',
+            ],
             default => null,
         };
 
@@ -210,6 +234,11 @@ final class PrivacyAuditService
         }
 
         if (in_array($key, ['scope_count', 'record_count'], true)
+            && (! is_int($value) || $value < 0)) {
+            throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
+        }
+
+        if (in_array($key, ['rule_version', 'item_count', 'repair_count', 'report_count'], true)
             && (! is_int($value) || $value < 0)) {
             throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
         }

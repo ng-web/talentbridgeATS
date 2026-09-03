@@ -32,4 +32,10 @@ return [
         'expiry_hours' => (int) env('PRIVACY_EXPORT_EXPIRY_HOURS', 72),
         'generation_stale_minutes' => (int) env('PRIVACY_EXPORT_GENERATION_STALE_MINUTES', 10),
     ],
+
+    // Technical authority windows only; these are not data-retention periods.
+    'retention' => [
+        'plan_expiry_hours' => (int) env('PRIVACY_DISPOSITION_PLAN_EXPIRY_HOURS', 168),
+        'authorization_expiry_hours' => (int) env('PRIVACY_DISPOSITION_AUTHORIZATION_EXPIRY_HOURS', 24),
+    ],
 ];

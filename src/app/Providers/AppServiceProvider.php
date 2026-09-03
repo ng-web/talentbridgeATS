@@ -8,6 +8,8 @@ use App\Models\ApplicationFile;
 use App\Models\JobSeeker;
 use App\Models\JobSeekerDocument;
 use App\Observers\ApplicantDocumentObserver;
+use App\Services\Privacy\DispositionExecutionBarrier;
+use App\Services\Privacy\NullDispositionExecutionBarrier;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -16,7 +18,7 @@ final class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(DispositionExecutionBarrier::class, NullDispositionExecutionBarrier::class);
     }
 
     public function boot(): void

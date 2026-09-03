@@ -8,11 +8,14 @@ use App\Models\PolicyDocument;
 use App\Models\SensitiveProcessingEvidence;
 use App\Services\Documents\ApplicantDocumentLifecycle;
 use App\Services\Documents\ApplicantDocumentStorage;
+use App\Services\Privacy\LegalHoldService;
+use App\Services\Privacy\RetentionDataCategories;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 final class JobSeekerDocumentController extends Controller
@@ -20,6 +23,7 @@ final class JobSeekerDocumentController extends Controller
     public function __construct(
         private readonly ApplicantDocumentStorage $storage,
         private readonly ApplicantDocumentLifecycle $lifecycle,
+        private readonly LegalHoldService $holds,
     ) {}
 
     public function store(Request $request): RedirectResponse
@@ -62,6 +66,7 @@ final class JobSeekerDocumentController extends Controller
                 &$existing,
                 &$replacedAttributes,
             ): void {
+                $this->holds->lockSubject((int) $jobSeeker->user_id);
                 if (in_array($type, JobSeekerDocument::MULTI_UPLOAD_TYPES, true)) {
                     JobSeekerDocument::create([
                         'job_seeker_id' => $jobSeeker->id,
@@ -74,10 +79,14 @@ final class JobSeekerDocumentController extends Controller
                     $existing = JobSeekerDocument::query()
                         ->where('job_seeker_id', $jobSeeker->id)
                         ->where('document_type', $type)
+                        ->lockForUpdate()
                         ->first();
 
                     if ($existing) {
-                        $replacedAttributes = $existing->only(['file_path', 'original_name', 'uploaded_at']);
+                        if ($this->holds->activeAppliesCurrent((int) $jobSeeker->user_id, RetentionDataCategories::APPLICANT_DOCUMENT, (int) $existing->id)) {
+                            throw ValidationException::withMessages(['file' => 'An active hold prevents replacement of this document.']);
+                        }
+                        $replacedAttributes = $existing->only(['file_path', 'original_name', 'uploaded_at', 'artifact_revision']);
                         $existing->update([
                             'file_path' => $path,
                             'original_name' => $originalName,
@@ -85,7 +94,14 @@ final class JobSeekerDocumentController extends Controller
                         ]);
 
                         if ($replacedAttributes['file_path'] !== $path) {
-                            $this->lifecycle->deleteAfterCommit((string) $replacedAttributes['file_path']);
+                            $this->lifecycle->deleteAfterCommit((string) $replacedAttributes['file_path'], [
+                                'subject_user_id' => (int) $jobSeeker->user_id,
+                                'data_category' => RetentionDataCategories::APPLICANT_DOCUMENT,
+                                'resource_id' => (int) $existing->id,
+                                'plan_item_id' => null,
+                                'artifact_revision' => (string) $replacedAttributes['artifact_revision'],
+                                'artifact_fingerprint' => hash('sha256', (string) $replacedAttributes['file_path']),
+                            ]);
                         }
                     } else {
                         JobSeekerDocument::create([
@@ -101,9 +117,6 @@ final class JobSeekerDocumentController extends Controller
         } catch (Throwable $e) {
             $this->storage->delete($path);
             Log::error('Applicant document replacement failed', [
-                'job_seeker_id' => $jobSeeker->id,
-                'document_id' => $existing?->id,
-                'document_type' => $type,
                 'exception_class' => $e::class,
             ]);
 
@@ -120,12 +133,17 @@ final class JobSeekerDocumentController extends Controller
         abort_unless($jobSeeker && $document->job_seeker_id === $jobSeeker->id, 403);
 
         try {
-            DB::transaction(fn () => $document->delete());
+            DB::transaction(function () use ($document, $jobSeeker): void {
+                $this->holds->lockSubject((int) $jobSeeker->user_id);
+                $current = JobSeekerDocument::query()->lockForUpdate()->findOrFail($document->id);
+                abort_unless((int) $current->job_seeker_id === (int) $jobSeeker->id, 403);
+                if ($this->holds->activeAppliesCurrent((int) $jobSeeker->user_id, RetentionDataCategories::APPLICANT_DOCUMENT, (int) $current->id)) {
+                    throw ValidationException::withMessages(['resource' => 'An active hold prevents removal of this document.']);
+                }
+                $current->delete();
+            });
         } catch (Throwable $e) {
             Log::error('Applicant document removal failed', [
-                'job_seeker_id' => $jobSeeker->id,
-                'document_id' => $document->id,
-                'document_type' => $document->document_type,
                 'exception_class' => $e::class,
             ]);
 

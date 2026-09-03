@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\PaymentReviewController;
 use App\Http\Controllers\Admin\PolicyDocumentController;
 use App\Http\Controllers\Admin\PrivacyRequestController as AdminPrivacyRequestController;
+use App\Http\Controllers\Admin\RetentionController;
 use App\Http\Controllers\Admin\SensitiveProcessingEvidenceController;
 use App\Http\Controllers\Auth\ForcedPasswordChangeController;
 use App\Http\Controllers\DashboardController;
@@ -176,6 +177,28 @@ Route::middleware(['auth', 'security.session', 'password.change.required', 'admi
         Route::post('/privacy-evidence', [SensitiveProcessingEvidenceController::class, 'store'])
             ->middleware(['permission:privacy.evidence.manage', 'password.confirm'])
             ->name('privacy-evidence.store');
+
+        Route::get('/retention', [RetentionController::class, 'index'])
+            ->middleware('direct.permission:privacy.retention.view|privacy.holds.view|privacy.disposition.plan|privacy.disposition.authorize|privacy.disposition.execute')
+            ->name('retention.index');
+        Route::post('/retention/rules', [RetentionController::class, 'storeRule'])
+            ->middleware(['direct.permission:privacy.retention.manage', 'password.confirm'])->name('retention.rules.store');
+        Route::post('/retention/rules/{retentionRule}/approve', [RetentionController::class, 'approveRule'])
+            ->middleware(['direct.permission:privacy.retention.approve', 'password.confirm'])->name('retention.rules.approve');
+        Route::post('/retention/rules/{retentionRule}/retire', [RetentionController::class, 'retireRule'])
+            ->middleware(['direct.permission:privacy.retention.approve', 'password.confirm'])->name('retention.rules.retire');
+        Route::post('/retention/holds', [RetentionController::class, 'storeHold'])
+            ->middleware(['direct.permission:privacy.holds.manage', 'password.confirm'])->name('retention.holds.store');
+        Route::post('/retention/holds/{legalHold}/release', [RetentionController::class, 'releaseHold'])
+            ->middleware(['direct.permission:privacy.holds.manage', 'password.confirm'])->name('retention.holds.release');
+        Route::post('/retention/plans', [RetentionController::class, 'createPlan'])
+            ->middleware(['direct.permission:privacy.disposition.plan', 'password.confirm'])->name('retention.plans.store');
+        Route::post('/retention/plans/{dispositionPlan}/authorize', [RetentionController::class, 'authorizePlan'])
+            ->middleware(['direct.permission:privacy.disposition.authorize', 'password.confirm'])->name('retention.plans.authorize');
+        Route::post('/retention/plans/{dispositionPlan}/revoke', [RetentionController::class, 'revokePlan'])
+            ->middleware(['direct.permission:privacy.disposition.authorize', 'password.confirm'])->name('retention.plans.revoke');
+        Route::post('/retention/plans/{dispositionPlan}/execute', [RetentionController::class, 'executePlan'])
+            ->middleware(['direct.permission:privacy.disposition.execute', 'password.confirm'])->name('retention.plans.execute');
 
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
         Route::get('/users/deleted', [\App\Http\Controllers\Admin\UserController::class, 'deleted'])->name('users.deleted');

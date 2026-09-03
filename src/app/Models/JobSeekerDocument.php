@@ -4,14 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 final class JobSeekerDocument extends Model
 {
     public const TYPE_PASSPORT = 'passport';
+
     public const TYPE_PROFILE_PHOTO = 'profile_photo';
+
     public const TYPE_DRIVERS_LICENSE = 'drivers_license';
+
     public const TYPE_CERTIFICATE = 'certificate';
+
     public const TYPE_POLICE_RECORD = 'police_record';
+
     public const TYPE_MEDICAL_RECORD = 'medical_record';
 
     public const TYPES = [
@@ -24,12 +30,12 @@ final class JobSeekerDocument extends Model
     ];
 
     public const LABELS = [
-        self::TYPE_PASSPORT        => 'Passport (Bio-data Page)',
-        self::TYPE_PROFILE_PHOTO   => 'Profile Photo',
+        self::TYPE_PASSPORT => 'Passport (Bio-data Page)',
+        self::TYPE_PROFILE_PHOTO => 'Profile Photo',
         self::TYPE_DRIVERS_LICENSE => "Driver's License",
-        self::TYPE_CERTIFICATE     => 'Qualifications / Certificates',
-        self::TYPE_POLICE_RECORD   => 'Police Record',
-        self::TYPE_MEDICAL_RECORD  => 'Medical Record',
+        self::TYPE_CERTIFICATE => 'Qualifications / Certificates',
+        self::TYPE_POLICE_RECORD => 'Police Record',
+        self::TYPE_MEDICAL_RECORD => 'Medical Record',
     ];
 
     public const MULTI_UPLOAD_TYPES = [
@@ -60,6 +66,18 @@ final class JobSeekerDocument extends Model
         'notes',
     ];
 
+    protected $hidden = ['artifact_revision'];
+
+    protected static function booted(): void
+    {
+        self::creating(fn (self $document) => $document->artifact_revision ??= (string) Str::uuid());
+        self::updating(function (self $document): void {
+            if ($document->isDirty('file_path')) {
+                $document->artifact_revision = (string) Str::uuid();
+            }
+        });
+    }
+
     protected $casts = [
         'uploaded_at' => 'datetime',
     ];
@@ -73,7 +91,7 @@ final class JobSeekerDocument extends Model
     {
         return match ($type) {
             self::TYPE_PROFILE_PHOTO => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-            default                  => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            default => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         };
     }
 
@@ -81,7 +99,7 @@ final class JobSeekerDocument extends Model
     {
         return match ($type) {
             self::TYPE_PROFILE_PHOTO => '.jpg,.jpeg,.png',
-            default                  => '.pdf,.jpg,.jpeg,.png',
+            default => '.pdf,.jpg,.jpeg,.png',
         };
     }
 

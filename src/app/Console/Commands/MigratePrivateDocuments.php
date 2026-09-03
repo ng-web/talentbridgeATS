@@ -8,6 +8,8 @@ use App\Models\JobSeeker;
 use App\Models\JobSeekerDocument;
 use App\Services\Documents\ApplicantDocumentLifecycle;
 use App\Services\Documents\ApplicantDocumentStorage;
+use App\Services\Privacy\LegalHoldService;
+use App\Services\Privacy\RetentionDataCategories;
 use App\Services\Security\PrivacyAuditService;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,6 +37,7 @@ final class MigratePrivateDocuments extends Command
         private readonly ApplicantDocumentLifecycle $lifecycle,
         private readonly ApplicantDocumentStorage $storage,
         private readonly PrivacyAuditService $audit,
+        private readonly LegalHoldService $holds,
     ) {
         parent::__construct();
     }
@@ -121,7 +124,7 @@ final class MigratePrivateDocuments extends Command
                 ])),
             ],
             [
-                'query' => JobSeekerDocument::query()
+                'query' => JobSeekerDocument::query()->with('jobSeeker')
                     ->when($userId, fn ($query) => $query->whereHas('jobSeeker', fn ($jobSeeker) => $jobSeeker->where('user_id', $userId))),
                 'references' => fn (JobSeekerDocument $model) => [
                     $this->reference(
@@ -134,7 +137,7 @@ final class MigratePrivateDocuments extends Command
                 ],
             ],
             [
-                'query' => Application::query()
+                'query' => Application::query()->with('jobSeeker')
                     ->when($userId, fn ($query) => $query->whereHas('jobSeeker', fn ($jobSeeker) => $jobSeeker->where('user_id', $userId))),
                 'references' => fn (Application $model) => array_values(array_filter([
                     $this->reference($model, 'submitted_resume_path', 'application_resume', 'applications/'.$model->id.'/resume', $model->job_seeker_id),
@@ -143,7 +146,7 @@ final class MigratePrivateDocuments extends Command
             ],
             [
                 'query' => ApplicationFile::query()
-                    ->with('application')
+                    ->with('application.jobSeeker')
                     ->when($userId, fn ($query) => $query->whereHas('application.jobSeeker', fn ($jobSeeker) => $jobSeeker->where('user_id', $userId))),
                 'references' => fn (ApplicationFile $model) => [
                     $this->reference(
@@ -178,7 +181,19 @@ final class MigratePrivateDocuments extends Command
             $extension !== '' ? '.'.$extension : '',
         );
 
-        return compact('model', 'field', 'category', 'path', 'destination');
+        [$subjectUserId, $dataCategory, $resourceId, $artifactRevision] = match (true) {
+            $model instanceof JobSeeker => [(int) $model->user_id, RetentionDataCategories::APPLICANT_PROFILE, (int) $model->id, null],
+            $model instanceof JobSeekerDocument => [(int) $model->jobSeeker?->user_id, RetentionDataCategories::APPLICANT_DOCUMENT, (int) $model->id, (string) $model->artifact_revision],
+            $model instanceof Application => [(int) $model->jobSeeker?->user_id, RetentionDataCategories::APPLICATION, (int) $model->id, null],
+            $model instanceof ApplicationFile => [(int) $model->application?->jobSeeker?->user_id, RetentionDataCategories::APPLICATION_FILE, (int) $model->id, null],
+            default => throw new RuntimeException('Unsupported applicant-document migration resource.'),
+        };
+
+        if ($subjectUserId < 1 || $resourceId < 1) {
+            throw new RuntimeException('Applicant-document migration context is incomplete.');
+        }
+
+        return compact('model', 'field', 'category', 'path', 'destination', 'subjectUserId', 'dataCategory', 'resourceId', 'artifactRevision');
     }
 
     /** @param array<string, mixed> $reference */
@@ -209,6 +224,7 @@ final class MigratePrivateDocuments extends Command
         $source = $reference['path'];
         $destination = $reference['destination'];
         $category = $reference['category'];
+        $cleanupContext = $this->cleanupContext($reference, $source);
         $private = Storage::disk(ApplicantDocumentStorage::PRIVATE_DISK);
         $public = Storage::disk(ApplicantDocumentStorage::LEGACY_PUBLIC_DISK);
 
@@ -275,15 +291,17 @@ final class MigratePrivateDocuments extends Command
                 throw new RuntimeException('Legacy source changed during migration.');
             }
 
-            DB::transaction(function () use ($model, $field, $source, $destination, $category): void {
-                $updated = $model->newQuery()
-                    ->whereKey($model->getKey())
-                    ->where($field, $source)
-                    ->update([$field => $destination]);
+            $held = DB::transaction(function () use ($model, $field, $source, $destination, $category, $cleanupContext): bool {
+                $this->holds->lockSubject($cleanupContext['subject_user_id']);
+                if ($this->holds->activeAppliesCurrent($cleanupContext['subject_user_id'], $cleanupContext['data_category'], $cleanupContext['resource_id'])) {
+                    return true;
+                }
 
-                if ($updated !== 1) {
+                $current = $model->newQuery()->lockForUpdate()->find($model->getKey());
+                if (! $current || ! hash_equals((string) $source, (string) $current->getAttribute($field))) {
                     throw new RuntimeException('Document reference changed during migration.');
                 }
+                $current->update([$field => $destination]);
 
                 $this->audit->record(
                     event: 'applicant_document_migrated_private',
@@ -296,18 +314,39 @@ final class MigratePrivateDocuments extends Command
                     ],
                 );
 
-                $this->lifecycle->deleteAfterCommit($source);
+                $this->lifecycle->deleteAfterCommit($source, $cleanupContext);
+
+                return false;
             });
+
+            if ($held) {
+                return 'held_preserved';
+            }
 
             return 'migrated';
         } catch (Throwable) {
             $currentPath = $model->newQuery()->whereKey($model->getKey())->value($field);
             if ($currentPath !== $destination) {
-                $this->lifecycle->deleteIfUnreferenced($destination);
+                $this->lifecycle->deleteAfterCommit($destination, $this->cleanupContext($reference, $destination));
             }
 
             return 'failed';
         }
+    }
+
+    /** @param array<string, mixed> $reference
+     * @return array{subject_user_id:int,data_category:string,resource_id:int,plan_item_id:null,artifact_revision:?string,artifact_fingerprint:string}
+     */
+    private function cleanupContext(array $reference, string $path): array
+    {
+        return [
+            'subject_user_id' => (int) $reference['subjectUserId'],
+            'data_category' => (string) $reference['dataCategory'],
+            'resource_id' => (int) $reference['resourceId'],
+            'plan_item_id' => null,
+            'artifact_revision' => $reference['artifactRevision'] === null ? null : (string) $reference['artifactRevision'],
+            'artifact_fingerprint' => hash('sha256', $path),
+        ];
     }
 
     /** @param array<string, mixed> $reference */

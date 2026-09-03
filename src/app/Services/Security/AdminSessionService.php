@@ -15,25 +15,32 @@ final class AdminSessionService
 
     public function invalidateAll(User $user): int
     {
-        $user->forceFill([
-            'security_version' => ((int) $user->security_version) + 1,
-            'remember_token' => Str::random(60),
-        ])->save();
+        return DB::transaction(function () use ($user): int {
+            $current = User::withTrashed()->lockForUpdate()->findOrFail($user->id);
+            $current->forceFill([
+                'security_version' => ((int) $current->security_version) + 1,
+                'remember_token' => Str::random(60),
+            ])->save();
+            $user->forceFill(['security_version' => $current->security_version, 'remember_token' => $current->remember_token]);
 
-        return $this->deleteStoredSessions($user);
+            return $this->deleteStoredSessions($current);
+        });
     }
 
     public function invalidateOthers(User $user, Request $request): int
     {
-        $user->forceFill([
-            'security_version' => ((int) $user->security_version) + 1,
-            'remember_token' => Str::random(60),
-        ])->save();
+        return DB::transaction(function () use ($user, $request): int {
+            $current = User::withTrashed()->lockForUpdate()->findOrFail($user->id);
+            $current->forceFill([
+                'security_version' => ((int) $current->security_version) + 1,
+                'remember_token' => Str::random(60),
+            ])->save();
+            $user->forceFill(['security_version' => $current->security_version, 'remember_token' => $current->remember_token]);
+            $deleted = $this->deleteStoredSessions($current, $request->session()->getId());
+            $this->stamp($request, $user);
 
-        $deleted = $this->deleteStoredSessions($user, $request->session()->getId());
-        $this->stamp($request, $user);
-
-        return $deleted;
+            return $deleted;
+        });
     }
 
     public function stamp(Request $request, User $user): void

@@ -9,12 +9,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
 final class User extends Authenticatable
 {
-    use HasFactory, HasRoles, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory;
+    use HasRoles {
+        removeRole as private removeRoleWithoutAuthorityFence;
+        revokePermissionTo as private revokePermissionWithoutAuthorityFence;
+        syncPermissions as private syncPermissionsWithoutAuthorityFence;
+        syncRoles as private syncRolesWithoutAuthorityFence;
+    }
+    use Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     public const ACCESS_ACTIVE = 'active';
 
@@ -51,6 +60,48 @@ final class User extends Authenticatable
             'security_version' => 'integer',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    public function revokePermissionTo($permission): static
+    {
+        return $this->mutateAuthority(fn (): static => $this->revokePermissionWithoutAuthorityFence($permission));
+    }
+
+    public function removeRole(...$role): static
+    {
+        return $this->mutateAuthority(fn (): static => $this->removeRoleWithoutAuthorityFence(...$role));
+    }
+
+    public function syncPermissions(...$permissions): static
+    {
+        return $this->mutateAuthority(fn (): static => $this->syncPermissionsWithoutAuthorityFence(...$permissions));
+    }
+
+    public function syncRoles(...$roles): static
+    {
+        return $this->mutateAuthority(fn (): static => $this->syncRolesWithoutAuthorityFence(...$roles));
+    }
+
+    /**
+     * The users row is the stable authority/version fence. Revocation-like
+     * mutations serialize with destructive disposition and invalidate old evidence.
+     */
+    private function mutateAuthority(callable $mutation): static
+    {
+        return DB::transaction(function () use ($mutation): static {
+            $locked = self::withTrashed()->lockForUpdate()->findOrFail($this->getKey());
+            $result = $mutation();
+            $locked->forceFill([
+                'security_version' => ((int) $locked->security_version) + 1,
+                'remember_token' => Str::random(60),
+            ])->save();
+            $this->forceFill([
+                'security_version' => $locked->security_version,
+                'remember_token' => $locked->remember_token,
+            ]);
+
+            return $result;
+        });
     }
 
     public function jobSeeker(): HasOne

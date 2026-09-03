@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
+            'direct.permission' => \App\Http\Middleware\EnsureDirectPermission::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'seeker.access' => \App\Http\Middleware\EnsureActiveSeekerAccess::class,
             'employer.posting.access' => \App\Http\Middleware\EnsureActiveEmployerPostingAccess::class,

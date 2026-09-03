@@ -5,6 +5,8 @@ namespace App\Http\Controllers\JobSeeker;
 use App\Http\Controllers\Controller;
 use App\Services\Documents\ApplicantDocumentLifecycle;
 use App\Services\Documents\ApplicantDocumentStorage;
+use App\Services\Privacy\LegalHoldService;
+use App\Services\Privacy\RetentionDataCategories;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +19,7 @@ final class DocumentController extends Controller
     public function __construct(
         private readonly ApplicantDocumentStorage $storage,
         private readonly ApplicantDocumentLifecycle $lifecycle,
+        private readonly LegalHoldService $holds,
     ) {}
 
     public function uploadResume(Request $request): RedirectResponse
@@ -29,24 +32,35 @@ final class DocumentController extends Controller
             'resume' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
         ]);
 
-        $oldPath = $jobSeeker->resume_path;
         $path = $this->storage->store($request->file('resume'), $jobSeeker->id, 'profile/resume');
 
         try {
-            DB::transaction(function () use ($jobSeeker, $oldPath, $path): void {
-                $jobSeeker->update([
+            DB::transaction(function () use ($jobSeeker, $path): void {
+                $this->holds->lockSubject((int) $jobSeeker->user_id);
+                $current = $jobSeeker->newQuery()->lockForUpdate()->findOrFail($jobSeeker->id);
+                $oldPath = $current->resume_path;
+                if ($oldPath && $this->holds->activeAppliesCurrent((int) $current->user_id, RetentionDataCategories::APPLICANT_PROFILE, (int) $current->id)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['resume' => 'An active hold prevents replacement of this resume.']);
+                }
+                $current->update([
                     'resume_path' => $path,
-                    'profile_completeness' => $this->recalculate($jobSeeker, ['resume_path' => $path]),
+                    'profile_completeness' => $this->recalculate($current, ['resume_path' => $path]),
                 ]);
 
                 if ($oldPath && $oldPath !== $path) {
-                    $this->lifecycle->deleteAfterCommit($oldPath);
+                    $this->lifecycle->deleteAfterCommit($oldPath, [
+                        'subject_user_id' => (int) $current->user_id,
+                        'data_category' => RetentionDataCategories::APPLICANT_PROFILE,
+                        'resource_id' => (int) $current->id,
+                        'plan_item_id' => null,
+                        'artifact_revision' => null,
+                        'artifact_fingerprint' => hash('sha256', $oldPath),
+                    ]);
                 }
             });
         } catch (Throwable $e) {
             $this->storage->delete($path);
             Log::error('Applicant resume replacement failed', [
-                'job_seeker_id' => $jobSeeker->id,
                 'exception_class' => $e::class,
             ]);
 
@@ -66,18 +80,29 @@ final class DocumentController extends Controller
 
         try {
             DB::transaction(function () use ($jobSeeker): void {
-                $oldPath = $jobSeeker->resume_path;
+                $this->holds->lockSubject((int) $jobSeeker->user_id);
+                $current = $jobSeeker->newQuery()->lockForUpdate()->findOrFail($jobSeeker->id);
+                $oldPath = $current->resume_path;
+                if ($oldPath && $this->holds->activeAppliesCurrent((int) $current->user_id, RetentionDataCategories::APPLICANT_PROFILE, (int) $current->id)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['resume' => 'An active hold prevents removal of this resume.']);
+                }
 
-                $jobSeeker->update([
+                $current->update([
                     'resume_path' => null,
-                    'profile_completeness' => $this->recalculate($jobSeeker, ['resume_path' => null]),
+                    'profile_completeness' => $this->recalculate($current, ['resume_path' => null]),
                 ]);
 
-                $this->lifecycle->deleteAfterCommit($oldPath);
+                $this->lifecycle->deleteAfterCommit($oldPath, [
+                    'subject_user_id' => (int) $current->user_id,
+                    'data_category' => RetentionDataCategories::APPLICANT_PROFILE,
+                    'resource_id' => (int) $current->id,
+                    'plan_item_id' => null,
+                    'artifact_revision' => null,
+                    'artifact_fingerprint' => $oldPath ? hash('sha256', $oldPath) : null,
+                ]);
             });
         } catch (Throwable $e) {
             Log::error('Applicant resume removal failed', [
-                'job_seeker_id' => $jobSeeker->id,
                 'exception_class' => $e::class,
             ]);
 

@@ -91,6 +91,18 @@ final class PrivacyAuditService
         'disposition_skipped' => ['data_category', 'disposition_method', 'outcome_code'],
         'disposition_failed' => ['data_category', 'disposition_method', 'outcome_code'],
         'disposition_reconciled' => ['repair_count', 'report_count'],
+        'incident.created' => ['incident_status', 'technical_severity', 'classification_code'],
+        'incident.assigned' => ['incident_status'],
+        'incident.state_changed' => ['from_status', 'incident_status', 'action_code', 'action_result'],
+        'incident.severity_changed' => ['technical_severity'],
+        'incident.scope_changed' => ['scope_count', 'system_count', 'subject_count_recorded'],
+        'incident.escalated' => ['escalation_status'],
+        'incident.controller_acknowledged' => ['escalation_status'],
+        'incident.controller_decision_recorded' => ['breach_assessment', 'authority_decision', 'subject_decision', 'decision_version', 'reason_code'],
+        'incident.hold_issued' => ['hold_scope', 'hold_code', 'data_category'],
+        'incident.closed' => ['incident_status'],
+        'incident.reopened' => ['incident_status', 'reason_code'],
+        'incident.reconciliation_review' => ['incident_status', 'repair_count', 'report_count'],
     ];
 
     /**
@@ -210,6 +222,14 @@ final class PrivacyAuditService
             'purpose_code' => config('privacy.sensitive_processing.purpose_codes', []),
             'evidence_type' => config('privacy.sensitive_processing.evidence_types', []),
             'data_category' => \App\Services\Privacy\RetentionDataCategories::all(),
+            'incident_status', 'from_status' => \App\Services\Privacy\IncidentTaxonomy::STATUSES,
+            'technical_severity' => \App\Services\Privacy\IncidentTaxonomy::SEVERITIES,
+            'classification_code' => \App\Services\Privacy\IncidentTaxonomy::CLASSIFICATIONS,
+            'action_code' => \App\Services\Privacy\IncidentTaxonomy::ACTION_CODES,
+            'action_result' => \App\Services\Privacy\IncidentTaxonomy::ACTION_RESULTS,
+            'escalation_status' => \App\Services\Privacy\IncidentTaxonomy::ESCALATION_STATUSES,
+            'breach_assessment' => \App\Services\Privacy\IncidentTaxonomy::BREACH_ASSESSMENTS,
+            'authority_decision', 'subject_decision' => \App\Services\Privacy\IncidentTaxonomy::NOTIFICATION_DECISIONS,
             'rule_status' => \App\Models\RetentionRule::STATUSES,
             'hold_scope' => \App\Models\LegalHold::SCOPES,
             'hold_code' => \App\Models\LegalHold::HOLD_CODES,
@@ -233,12 +253,12 @@ final class PrivacyAuditService
             throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
         }
 
-        if (in_array($key, ['scope_count', 'record_count'], true)
+        if (in_array($key, ['scope_count', 'system_count', 'record_count'], true)
             && (! is_int($value) || $value < 0)) {
             throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
         }
 
-        if (in_array($key, ['rule_version', 'item_count', 'repair_count', 'report_count'], true)
+        if (in_array($key, ['rule_version', 'decision_version', 'item_count', 'repair_count', 'report_count'], true)
             && (! is_int($value) || $value < 0)) {
             throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be a non-negative integer.");
         }
@@ -249,6 +269,10 @@ final class PrivacyAuditService
         }
 
         if ($key === 'access_granted' && ! is_bool($value)) {
+            throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be boolean.");
+        }
+
+        if ($key === 'subject_count_recorded' && ! is_bool($value)) {
             throw new InvalidArgumentException("Audit metadata value for [{$event}.{$key}] must be boolean.");
         }
 

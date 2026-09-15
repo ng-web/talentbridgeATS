@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\EmployerProvisioningController;
 use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\PaymentReviewController;
 use App\Http\Controllers\Admin\PolicyDocumentController;
+use App\Http\Controllers\Admin\PrivacyIncidentController;
 use App\Http\Controllers\Admin\PrivacyRequestController as AdminPrivacyRequestController;
 use App\Http\Controllers\Admin\RetentionController;
 use App\Http\Controllers\Admin\SensitiveProcessingEvidenceController;
@@ -177,6 +178,24 @@ Route::middleware(['auth', 'security.session', 'password.change.required', 'admi
         Route::post('/privacy-evidence', [SensitiveProcessingEvidenceController::class, 'store'])
             ->middleware(['permission:privacy.evidence.manage', 'password.confirm'])
             ->name('privacy-evidence.store');
+
+        Route::get('/privacy/incidents', [PrivacyIncidentController::class, 'index'])
+            ->middleware('direct.permission:privacy.incidents.view|privacy.incidents.manage|privacy.incidents.escalate|privacy.incidents.controller-decision|privacy.incidents.close|privacy.incidents.reopen')
+            ->name('incidents.index');
+        Route::get('/privacy/incidents/{privacyIncident}', [PrivacyIncidentController::class, 'show'])
+            ->middleware('direct.permission:privacy.incidents.view|privacy.incidents.manage|privacy.incidents.escalate|privacy.incidents.controller-decision|privacy.incidents.close|privacy.incidents.reopen')
+            ->name('incidents.show');
+        Route::post('/privacy/incidents', [PrivacyIncidentController::class, 'store'])->middleware(['direct.permission:privacy.incidents.manage', 'password.confirm'])->name('incidents.store');
+        Route::post('/privacy/incidents/{privacyIncident}/assign', [PrivacyIncidentController::class, 'assign'])->middleware(['direct.permission:privacy.incidents.manage', 'password.confirm'])->name('incidents.assign');
+        Route::post('/privacy/incidents/{privacyIncident}/severity', [PrivacyIncidentController::class, 'severity'])->middleware(['direct.permission:privacy.incidents.manage', 'password.confirm'])->name('incidents.severity');
+        Route::post('/privacy/incidents/{privacyIncident}/scope', [PrivacyIncidentController::class, 'scope'])->middleware(['direct.permission:privacy.incidents.manage', 'password.confirm'])->name('incidents.scope');
+        Route::post('/privacy/incidents/{privacyIncident}/transition', [PrivacyIncidentController::class, 'transition'])->middleware(['direct.permission:privacy.incidents.manage', 'password.confirm'])->name('incidents.transition');
+        Route::post('/privacy/incidents/{privacyIncident}/escalate', [PrivacyIncidentController::class, 'escalate'])->middleware(['direct.permission:privacy.incidents.escalate', 'password.confirm'])->name('incidents.escalate');
+        Route::post('/privacy/incidents/{privacyIncident}/acknowledge', [PrivacyIncidentController::class, 'acknowledge'])->middleware(['direct.permission:privacy.incidents.controller-decision', 'password.confirm'])->name('incidents.acknowledge');
+        Route::post('/privacy/incidents/{privacyIncident}/decision', [PrivacyIncidentController::class, 'decision'])->middleware(['direct.permission:privacy.incidents.controller-decision', 'password.confirm'])->name('incidents.decision');
+        Route::post('/privacy/incidents/{privacyIncident}/hold', [PrivacyIncidentController::class, 'hold'])->middleware(['direct.permission:privacy.incidents.manage', 'direct.permission:privacy.holds.manage', 'password.confirm'])->name('incidents.hold');
+        Route::post('/privacy/incidents/{privacyIncident}/close', [PrivacyIncidentController::class, 'close'])->middleware(['direct.permission:privacy.incidents.close', 'password.confirm'])->name('incidents.close');
+        Route::post('/privacy/incidents/{privacyIncident}/reopen', [PrivacyIncidentController::class, 'reopen'])->middleware(['direct.permission:privacy.incidents.reopen', 'password.confirm'])->name('incidents.reopen');
 
         Route::get('/retention', [RetentionController::class, 'index'])
             ->middleware('direct.permission:privacy.retention.view|privacy.holds.view|privacy.disposition.plan|privacy.disposition.authorize|privacy.disposition.execute')

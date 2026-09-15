@@ -47,7 +47,19 @@ final class PrivacySecurityPermissions
 
     public const DISPOSITION_RECONCILE = 'privacy.disposition.reconcile';
 
+    public const INCIDENTS_VIEW = 'privacy.incidents.view';
+
     public const INCIDENTS_MANAGE = 'privacy.incidents.manage';
+
+    public const INCIDENTS_ESCALATE = 'privacy.incidents.escalate';
+
+    public const INCIDENTS_CONTROLLER_DECIDE = 'privacy.incidents.controller-decision';
+
+    public const INCIDENTS_CLOSE = 'privacy.incidents.close';
+
+    public const INCIDENTS_REOPEN = 'privacy.incidents.reopen';
+
+    public const INCIDENTS_RECONCILE = 'privacy.incidents.reconcile';
 
     public const ADMIN_SECURITY_SELF = 'admin.security.self';
 
@@ -79,7 +91,7 @@ final class PrivacySecurityPermissions
             self::DISPOSITION_AUTHORIZE,
             self::DISPOSITION_EXECUTE,
             self::DISPOSITION_RECONCILE,
-            self::INCIDENTS_MANAGE,
+            ...self::introducedInPass4(),
             self::ADMIN_SECURITY_SELF,
             self::ADMIN_SECURITY_MANAGE,
             self::ACCESS_REVIEWS_MANAGE,
@@ -134,5 +146,25 @@ final class PrivacySecurityPermissions
     public static function retentionManager(): array
     {
         return self::introducedInPass3();
+    }
+
+    /** @return list<string> */
+    public static function introducedInPass4(): array
+    {
+        return [
+            self::INCIDENTS_VIEW,
+            self::INCIDENTS_MANAGE,
+            self::INCIDENTS_ESCALATE,
+            self::INCIDENTS_CONTROLLER_DECIDE,
+            self::INCIDENTS_CLOSE,
+            self::INCIDENTS_REOPEN,
+            self::INCIDENTS_RECONCILE,
+        ];
+    }
+
+    /** @return list<string> */
+    public static function incidentManager(): array
+    {
+        return self::introducedInPass4();
     }
 }

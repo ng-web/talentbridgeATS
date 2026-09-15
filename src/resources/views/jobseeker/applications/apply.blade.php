@@ -45,6 +45,32 @@
         <div class="rounded-3xl bg-white p-6 md:p-8 shadow border border-gray-100">
             <h3 class="text-xl font-semibold text-gray-900">Your Application</h3>
 
+            @if($contactErrors->isNotEmpty())
+                <div class="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800" role="alert">
+                    <p class="font-semibold">Complete your contact details before applying.</p>
+                    <p class="mt-1">A valid email address and phone number are required so the employer can contact you.</p>
+
+                    <ul class="mt-3 list-disc space-y-1 pl-5">
+                        @foreach($contactErrors->all() as $contactError)
+                            <li>{{ $contactError }}</li>
+                        @endforeach
+                    </ul>
+
+                    <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 font-medium">
+                        @if($contactErrors->has('applicant_phone'))
+                            <a href="{{ route('jobseeker.profile.edit') }}" class="text-[#6f4cb2] hover:underline">Update phone number</a>
+                        @endif
+                        @if($contactErrors->has('applicant_email'))
+                            <a href="{{ route('profile.edit') }}" class="text-[#6f4cb2] hover:underline">Update email address</a>
+                        @endif
+                    </div>
+                </div>
+            @else
+                <div class="mt-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                    Your profile has the required email address and phone number.
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('jobseeker.jobs.apply.store', $job) }}" enctype="multipart/form-data" class="mt-6 space-y-6">
                 @csrf
 
@@ -120,7 +146,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-3 pt-2">
-                    <x-likeslocale.button type="submit" variant="accent">
+                    <x-likeslocale.button type="submit" variant="accent" :disabled="$contactErrors->isNotEmpty()">
                         Submit Application
                     </x-likeslocale.button>
 

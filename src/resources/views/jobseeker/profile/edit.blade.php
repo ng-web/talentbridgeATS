@@ -152,7 +152,10 @@
                             <label class="block text-sm font-medium text-gray-700">Email Address</label>
                             <input type="email" value="{{ Auth::user()->email }}" disabled
                                    class="mt-1 block w-full rounded-md border-gray-200 bg-gray-50 text-gray-500 shadow-sm cursor-not-allowed">
-                            <p class="mt-1 text-xs text-gray-400">To change your login email, visit account settings.</p>
+                            <p class="mt-1 text-xs text-gray-400">
+                                A valid email is required to submit applications.
+                                <a href="{{ route('profile.edit') }}" class="font-medium text-[#6f4cb2] hover:underline">Visit account settings</a> to change it.
+                            </p>
                         </div>
 
                         <div>
@@ -161,6 +164,7 @@
                                    value="{{ old('phone', $jobSeeker->phone) }}"
                                    placeholder="+1 (868) 000-0000"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <p class="mt-1 text-xs text-gray-500">A valid phone number is required to submit applications.</p>
                             @error('phone')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror

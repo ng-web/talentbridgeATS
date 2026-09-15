@@ -285,7 +285,10 @@ final class PrivacyRemediationTest extends TestCase
         $job = $this->job($employer);
         $existingPath = 'applicants/'.$jobSeeker->id.'/profile/resume/existing.pdf';
         Storage::disk('private')->put($existingPath, 'existing valid resume', 'private');
-        $jobSeeker->update(['resume_path' => $existingPath]);
+        $jobSeeker->update([
+            'phone' => '+1 345 555 0100',
+            'resume_path' => $existingPath,
+        ]);
         DB::unprepared("CREATE TRIGGER fail_application_document_update BEFORE UPDATE OF submitted_resume_path ON applications BEGIN SELECT RAISE(ABORT, 'synthetic database failure'); END");
         $handler = new TestHandler;
         Log::swap(new Logger('application-failure-test', [$handler]));

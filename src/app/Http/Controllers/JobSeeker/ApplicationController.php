@@ -9,6 +9,7 @@ use App\Mail\JobSeekerApplicationSubmittedMail;
 use App\Models\Application;
 use App\Models\Job;
 use App\Notifications\ApplicationSubmittedNotification;
+use App\Services\Applications\ApplicantContactEligibility;
 use App\Services\Documents\ApplicantDocumentStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,10 @@ use Throwable;
 
 final class ApplicationController extends Controller
 {
-    public function __construct(private readonly ApplicantDocumentStorage $storage) {}
+    public function __construct(
+        private readonly ApplicantDocumentStorage $storage,
+        private readonly ApplicantContactEligibility $contactEligibility,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -61,7 +65,8 @@ final class ApplicationController extends Controller
 
     public function create(Job $job): View|RedirectResponse
     {
-        $jobSeeker = Auth::user()->jobSeeker;
+        $user = Auth::user();
+        $jobSeeker = $user->jobSeeker;
 
         abort_unless($jobSeeker, 404);
         abort_unless($job->is_approved && $job->status === Job::STATUS_PUBLISHED, 404);
@@ -84,12 +89,14 @@ final class ApplicationController extends Controller
         return view('jobseeker.applications.apply', [
             'job' => $job,
             'jobSeeker' => $jobSeeker,
+            'contactErrors' => $this->contactEligibility->validator($user, $jobSeeker)->errors(),
         ]);
     }
 
     public function store(Request $request, Job $job): RedirectResponse
     {
-        $jobSeeker = Auth::user()->jobSeeker;
+        $user = $request->user();
+        $jobSeeker = $user->jobSeeker;
 
         abort_unless($jobSeeker, 404);
         abort_unless($job->is_approved && $job->status === Job::STATUS_PUBLISHED, 404);
@@ -108,6 +115,8 @@ final class ApplicationController extends Controller
             return redirect()->route('jobseeker.applications.index')
                 ->with('error', 'You have already applied to this opportunity.');
         }
+
+        $this->contactEligibility->validator($user, $jobSeeker)->validate();
 
         $validated = $request->validate([
             'resume' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],

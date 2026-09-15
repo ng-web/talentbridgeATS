@@ -5,6 +5,7 @@ namespace App\Http\Controllers\JobSeeker;
 use App\Http\Controllers\Controller;
 use App\Models\Program;
 use App\Models\SensitiveProcessingEvidence;
+use App\Services\Applications\ApplicantContactEligibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 final class ProfileController extends Controller
 {
+    public function __construct(private readonly ApplicantContactEligibility $contactEligibility) {}
+
     public function edit(): View
     {
         $jobSeeker = Auth::user()->jobSeeker;
@@ -52,18 +55,20 @@ final class ProfileController extends Controller
             'program_id' => $programRule,
             'date_of_birth' => ['nullable', 'date'],
             'location' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => $this->contactEligibility->phoneRules(required: false),
             'education' => ['nullable', 'string'],
             'experience_summary' => ['nullable', 'string'],
             'skills' => ['nullable', 'string'],
             'work_study_interest_flag' => ['nullable', 'boolean'],
         ]);
 
+        $phone = $this->contactEligibility->normalizePhone($validated['phone'] ?? null);
+
         $jobSeeker->update([
             'program_id' => $jobSeeker->program_id ?: $validated['program_id'],
             'date_of_birth' => $validated['date_of_birth'] ?? null,
             'location' => $validated['location'] ?? null,
-            'phone' => $validated['phone'] ?? null,
+            'phone' => $phone,
             'education' => $validated['education'] ?? null,
             'experience_summary' => $validated['experience_summary'] ?? null,
             'skills' => $validated['skills'] ?? null,
@@ -71,7 +76,7 @@ final class ProfileController extends Controller
             'profile_completeness' => $this->calculateProfileCompleteness([
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'location' => $validated['location'] ?? null,
-                'phone' => $validated['phone'] ?? null,
+                'phone' => $phone,
                 'education' => $validated['education'] ?? null,
                 'experience_summary' => $validated['experience_summary'] ?? null,
                 'skills' => $validated['skills'] ?? null,

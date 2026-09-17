@@ -35,7 +35,10 @@ return new class extends Migration
             $table->timestamp('acknowledged_at');
             $table->timestamps();
 
-            $table->unique(['user_id', 'policy_document_id', 'acknowledgement_type']);
+            $table->unique(
+                ['user_id', 'policy_document_id', 'acknowledgement_type'],
+                'policy_ack_user_doc_type_unique',
+            );
         });
 
         Schema::create('sensitive_processing_evidence', function (Blueprint $table): void {
